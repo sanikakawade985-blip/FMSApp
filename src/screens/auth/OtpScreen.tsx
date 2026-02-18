@@ -135,6 +135,7 @@ export default function OtpScreen() {
             onKeyPress={({ nativeEvent }) =>
               handleKeyPress(nativeEvent.key ?? '', index)
             }
+            cursorColor={COLORS.primary}
             onFocus={() => setFocusedIndex(index)}
             style={[
               GlobalStyles.otpInput,

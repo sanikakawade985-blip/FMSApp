@@ -18,6 +18,7 @@ import { getDefaultCountry } from '../../utils/countryUtils';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GlobalStyles } from '../../styles/globalStyles';
 import { sendOtp } from '../../services/authApi';
+import { COLORS } from '../../theme/colors';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -131,6 +132,7 @@ export default function SignupScreen() {
         onChangeText={setMobile}
         value={mobile}
         maxLength={15}
+        cursorColor={COLORS.primary}
       />
 
       {!isValidMobile && mobile.length > 0 && (

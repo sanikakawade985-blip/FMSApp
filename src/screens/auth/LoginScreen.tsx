@@ -137,6 +137,7 @@ export default function LoginScreen() {
         onChangeText={setMobile}
         value={mobile}
         maxLength={15}
+        cursorColor={COLORS.primary}
       />
 
       {!isValidMobile && mobile.length > 0 && (
