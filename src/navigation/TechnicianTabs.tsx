@@ -17,6 +17,7 @@ import AddLeadScreen from '../screens/technician/AddLeadScreen';
 
 import NotificationScreen from '../screens/technician/NotificationScreen';
 import HelpScreen from '../screens/technician/HelpScreen';
+import HelpMessagesScreen from '../screens/technician/HelpMsgScreen';
 
 import TechProfileScreen from '../screens/techDrawer/TechProfileScreen';
 import InventoryScreen from '../screens/techDrawer/InventoryScreen';
@@ -36,6 +37,7 @@ export type TechnicianTabParamList = {
   AddLead: undefined;
   notification: undefined;
   help: undefined;
+  helpMessages: undefined;
   Profile: undefined;
   'Item Inventory': undefined;
   Expenditure: undefined;
@@ -56,7 +58,7 @@ export default function TechnicianTabs() {
           const currentRoute =
             props.state.routes[props.state.index].name;
 
-          const hideTabBar = currentRoute === 'help' || currentRoute === 'Settings' || currentRoute === 'FieldWeb AI';
+          const hideTabBar = currentRoute === 'help' || currentRoute === 'helpMessages' || currentRoute === 'Settings' || currentRoute === 'FieldWeb AI';
 
           return (
             <>
@@ -82,6 +84,7 @@ export default function TechnicianTabs() {
         
         <Tab.Screen name="notification" component={NotificationScreen} />
         <Tab.Screen name="help" component={HelpScreen} />
+        <Tab.Screen name="helpMessages" component={HelpMessagesScreen} />
 
         <Tab.Screen name="Profile" component={TechProfileScreen} />
         <Tab.Screen name="Item Inventory" component={InventoryScreen} />
@@ -104,11 +107,15 @@ function getTitle(state: any) {
       return 'Tasks';
     case 'Attendance':
       return 'Attendance';
+    case 'Leave':
+      return 'Attendance';
     case 'Passbook':
       return 'Passbook';
     case 'notification':
       return 'Notification';
     case 'help':
+      return 'Help & Support';
+    case 'helpMessages':
       return 'Help & Support';
     case 'Item Inventory':
       return 'Item Inventory';

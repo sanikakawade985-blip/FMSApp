@@ -1,8 +1,19 @@
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../../theme/colors';
+import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { TechnicianTabParamList } from '../../navigation/TechnicianTabs';
+
+type NavigationProp = BottomTabNavigationProp<
+  TechnicianTabParamList,
+  'help'
+>;
 
 export default function HelpScreen() {
+
+  const navigation = useNavigation<NavigationProp>();
+
   return (
     <View style={styles.container}>
       <View style={styles.banner}>
@@ -41,14 +52,14 @@ export default function HelpScreen() {
           <Pressable style={styles.footerItem}>
             <Ionicons
               name="home-outline"
-              size={22}
+              size={24}
               color={COLORS.primary}
             />
           </Pressable>
-          <Pressable style={styles.footerItem}>
+          <Pressable style={styles.footerItem} onPress={()=>navigation.navigate('helpMessages')}>
             <Ionicons
               name="chatbox-outline"
-              size={22}
+              size={24}
               color="#555"
             />
           </Pressable>
@@ -142,8 +153,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
-    paddingTop: 18,
+    paddingTop: 15,
   },
 });

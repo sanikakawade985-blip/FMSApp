@@ -9,12 +9,20 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../../theme/colors';
 import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { TechnicianTabParamList } from '../../navigation/TechnicianTabs';
+
+type NavigationProp = BottomTabNavigationProp<
+  TechnicianTabParamList,
+  'helpMessages'
+>;
 
 export default function HelpMessagesScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp>();
 
   return (
     <View style={styles.container}>
+      <View style={styles.redBg} />
 
       {/* Sub Header */}
       <View style={styles.subHeader}>
@@ -22,7 +30,7 @@ export default function HelpMessagesScreen() {
           name="chevron-back"
           size={26}
           color="#fff"
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('help')}
         />
         <Text style={styles.subHeaderTitle}>Messages</Text>
       </View>
@@ -34,7 +42,7 @@ export default function HelpMessagesScreen() {
         {/* New Conversation Card */}
         <Pressable
           style={styles.newCard}
-          onPress={() => navigation.navigate('SupportChat')}
+          onPress={() => navigation.navigate('help')}
         >
           <View>
             <Text style={styles.newTitle}>New Conversation</Text>
@@ -53,10 +61,7 @@ export default function HelpMessagesScreen() {
         {/* Recent Section */}
         <Text style={styles.recentTitle}>Recent</Text>
 
-        <Pressable
-          style={styles.recentItem}
-          onPress={() => navigation.navigate('SupportChat')}
-        >
+        <Pressable style={styles.recentItem}>
           <View style={{ flex: 1 }}>
             <View style={styles.recentTopRow}>
               <Text style={styles.name}>Walter Chahat</Text>
@@ -65,7 +70,7 @@ export default function HelpMessagesScreen() {
 
             <View style={styles.recentBottomRow}>
               <Text style={styles.preview}>
-                Welcome to FieldWeb, if you need help simpl...
+                Welcome to FieldWeb, if you need help simply...
               </Text>
 
               <View style={styles.badge}>
@@ -79,27 +84,46 @@ export default function HelpMessagesScreen() {
 
       </ScrollView>
 
-      {/* Bottom Branding */}
-      <View style={styles.bottomBar}>
-        <Ionicons name="home-outline" size={26} color="#777" />
-        <Ionicons name="chatbubble-outline" size={26} color={COLORS.primary} />
-        <Text style={styles.powered}>Powered by tawk.to</Text>
-      </View>
+      <View style={styles.footer}>
+              <View style={styles.footerRow}>
+                <Pressable style={styles.footerItem}
+                 onPress={() => navigation.navigate('help')}>
+                  <Ionicons
+                    name="home-outline"
+                    size={24}
+                    color="#555"
+                  />
+                </Pressable>
+                <Pressable style={styles.footerItem}>
+                  <Ionicons
+                    name="chatbox-outline"
+                    size={24}
+                  color={COLORS.primary}
+                  />
+                </Pressable>
+              </View>
+              <Text style={styles.footerText}>Powered by tawk.to</Text>
+            </View>
 
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-
+  container: { flex: 1, backgroundColor: '#f9f9f9' },
+  redBg: {
+    top: 0,
+    height: 80,
+    backgroundColor: COLORS.primary,
+  },
   subHeader: {
     backgroundColor: COLORS.primary,
-    paddingTop: 50,
+    paddingTop: 40,
     paddingBottom: 15,
     paddingHorizontal: 15,
     flexDirection: 'row',
     alignItems: 'center',
+    alignContent: 'center',
   },
 
   subHeaderTitle: {
@@ -115,7 +139,7 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 28,
-    fontWeight: '500',
+    fontWeight: '400',
     marginBottom: 20,
   },
 
@@ -158,12 +182,12 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 18,
+    fontSize: 15,
     color: '#666',
   },
 
   time: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#999',
   },
 
@@ -175,7 +199,7 @@ const styles = StyleSheet.create({
 
   preview: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
   },
 
@@ -194,14 +218,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  bottomBar: {
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
     paddingVertical: 20,
+    backgroundColor: '#fff',
+    height: 100,
+    elevation: 10,
+  },
+  footerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-
-  powered: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#777',
+  footerItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#666',
+    paddingTop: 15,
   },
 });
