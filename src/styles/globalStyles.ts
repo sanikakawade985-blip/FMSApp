@@ -6,7 +6,7 @@ export const GlobalStyles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 48,
+    paddingTop: 30,
   },
 
   center: {
@@ -16,15 +16,15 @@ export const GlobalStyles = StyleSheet.create({
 
   /* ===== Text ===== */
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 30,
+    fontWeight: '400',
     color: COLORS.textPrimary,
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 10,
   },
 
   subtitle: {
-    fontSize: 15,
+    fontSize: 20,
     color: COLORS.textTertiary,
     textAlign: 'center',
     marginBottom: 28,
@@ -37,14 +37,16 @@ export const GlobalStyles = StyleSheet.create({
   },
 
   footerText: { 
-    marginTop: 14, 
+    marginTop: 22, 
     textAlign: 'center', 
-    color: COLORS.textTertiary, 
+    color: COLORS.textTertiary,
+    fontSize: 18, 
 },
 
   link: {
     color: COLORS.primary,
     fontWeight: '600',
+    fontSize: 18,
   },
 
   errorText: {
@@ -57,13 +59,13 @@ export const GlobalStyles = StyleSheet.create({
   /* ===== Inputs ===== */
   input: {
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#505050',
     borderRadius: 26,
     paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
     width: '100%',
     height: 40,
     marginBottom: 16,
+    fontSize: 17,
   },
 
   inputError: {
@@ -73,10 +75,9 @@ export const GlobalStyles = StyleSheet.create({
   /* ===== Dropdown / Selector ===== */
   dropdownWrapper: {
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#505050',
     borderRadius: 26,
     height: 40,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     paddingHorizontal: 16,
     width: '100%',
@@ -138,22 +139,23 @@ export const GlobalStyles = StyleSheet.create({
   },
 
   logo: {
-    width: 180,
-    height: 80,
+    width: 250,
+    height: 180,
   },
 
   helpText: { 
     marginTop: 16, 
     textAlign: 'center', 
     color: COLORS.textPrimary, 
-    fontSize: 15, 
+    fontSize: 18, 
+    paddingVertical: 10,
 }, 
 
 helpButtonsRow: { 
     flexDirection: 'row', 
     justifyContent: 'center', 
     gap: 12, 
-    marginTop: 20, 
+    marginTop: 25, 
 }, 
 helpButton: { 
     flexDirection: 'row', 
@@ -179,10 +181,11 @@ languageRow: {
     alignItems: 'center', 
     justifyContent: 'center', 
     marginTop: 16, 
+    paddingVertical: 10,
 }, 
 languageText: { 
     marginLeft: 6, 
-    fontSize: 14, 
+    fontSize: 17, 
     fontWeight: 'bold', 
     color: COLORS.textPrimary, 
 }, 

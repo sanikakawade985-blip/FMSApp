@@ -20,7 +20,7 @@ export default function AppButton({ title, onPress, disabled = false }) {
 const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 30,
     alignItems: 'center',
   },
@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: COLORS.textOnPrimary,
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
   },
 });

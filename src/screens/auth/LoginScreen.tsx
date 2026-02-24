@@ -67,12 +67,11 @@ export default function LoginScreen() {
 
       <Text style={GlobalStyles.title}>Welcome</Text>
       <Text style={GlobalStyles.subtitle}>
-        Please enter your details to access your account
+        Please enter your details {`\n`} to access your account
       </Text>
 
-      <Text style={GlobalStyles.label}>Mobile Number</Text>
       <TextInput
-        placeholder="Enter your mobile number"
+        placeholder="Enter Your Mobile No. Or Email"
         keyboardType="phone-pad"
         style={[
           GlobalStyles.input,
@@ -95,14 +94,14 @@ export default function LoginScreen() {
       <View style={GlobalStyles.languageRow}>
         <Ionicons
           name="language-outline"
-          size={20}
+          size={22}
           color={COLORS.textPrimary}
         />
         <Text style={GlobalStyles.languageText}> Change Language </Text>
       </View>
 
       <Text style={GlobalStyles.footerText}>
-        New to FieldWeb?{' '}
+        New to FieldWeb?{'\t\t\t\t'}
         <Text
           style={GlobalStyles.link}
           onPress={() => navigation.navigate('Signup')}
@@ -112,7 +111,7 @@ export default function LoginScreen() {
       </Text>
 
       <Text style={GlobalStyles.helpText}>
-        If you are having trouble logging in
+        If you are having trouble Logging in
       </Text>
 
       <View style={GlobalStyles.helpButtonsRow}>

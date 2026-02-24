@@ -81,10 +81,9 @@ export default function SignupScreen() {
 
       <Text style={GlobalStyles.title}>Sign Up</Text>
       <Text style={GlobalStyles.subtitle}>
-        Create an admin account for your company
+        Please enter your details {'\n'} to signup
       </Text>
 
-      <Text style={GlobalStyles.label}>Country Code</Text>
       <Pressable
         style={GlobalStyles.dropdownWrapper}
         onPress={() => setCountryModalVisible(true)}
@@ -121,10 +120,9 @@ export default function SignupScreen() {
         </Pressable>
       </Modal>
 
-      <Text style={GlobalStyles.label}>Mobile Number</Text>
       <TextInput
         keyboardType="phone-pad"
-        placeholder="Enter your mobile number"
+        placeholder="Enter Your Mobile Number"
         style={[
           GlobalStyles.input,
           !isValidMobile && mobile.length > 0 && GlobalStyles.inputError,
@@ -148,7 +146,7 @@ export default function SignupScreen() {
       <AppButton title="GET OTP" onPress={signup} />
 
       <Text style={GlobalStyles.footerText}>
-        Already Registered?{' '}
+        Already Registered?{'\t\t\t\t'}
         <Text
           style={GlobalStyles.link}
           onPress={() => navigation.navigate('Login')}
@@ -165,12 +163,12 @@ export default function SignupScreen() {
         <Pressable
           style={[GlobalStyles.helpButton, GlobalStyles.whatsappButton]}
         >
-          <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" />
+          <Ionicons name="logo-whatsapp" size={22} color="#FFFFFF" />
           <Text style={GlobalStyles.helpButtonText}>WhatsApp</Text>
         </Pressable>
 
         <Pressable style={[GlobalStyles.helpButton, GlobalStyles.videoButton]}>
-          <Ionicons name="play-circle" size={20} color="#C22032" />
+          <Ionicons name="play-circle" size={22} color="#C22032" />
           <Text style={GlobalStyles.helpButtonText}>Video</Text>
         </Pressable>
       </View>
