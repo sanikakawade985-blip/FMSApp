@@ -57,7 +57,13 @@ export default function OtpScreen() {
         return;
       }
 
-      setAuth(String(userId), role as any);
+      setAuth(
+        String(userId),
+        role,
+        role,
+        mobile,
+        token
+      );
     };
 
   const handleOtpChange = (value: string, index: number) => {

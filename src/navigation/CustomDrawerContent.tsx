@@ -11,6 +11,8 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
   const [ showLogoutModal, setShowLogoutModal ] = useState(false);
   const [ showCheckOutModal, setShowCheckOutModal ] = useState(false);
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const name = useAuthStore((state) => state.name);
+  const phone = useAuthStore((state) => state.phone);
 
   return (
     <View style={styles.container}>
@@ -32,14 +34,14 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.name}>Technician Name</Text>
+          <Text style={styles.name}>{name ?? 'User'}</Text>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Ionicons name="star" size={18} color={COLORS.primary} />
             <Text style={{ color: COLORS.primary, fontSize: 16 }}>4.5</Text>
           </View>
 
-          <Text style={styles.phone}>+91 8888888888</Text>
+          <Text style={styles.phone}>{phone ?? ''}</Text>
         </View>
 
         <Pressable
