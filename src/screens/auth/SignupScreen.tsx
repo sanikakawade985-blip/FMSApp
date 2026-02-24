@@ -17,7 +17,7 @@ import { COUNTRIES, Country } from '../../data/countries';
 import { getDefaultCountry } from '../../utils/countryUtils';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GlobalStyles } from '../../styles/globalStyles';
-import { sendOtp } from '../../services/authApi';
+import { signupMobileApi } from '../../services/authApi';
 import { COLORS } from '../../theme/colors';
 
 type AuthStackParamList = {
@@ -51,15 +51,15 @@ export default function SignupScreen() {
     }
 
     try {
-      await sendOtp({
-        countryCode: selectedCountry.dialCode,
-        mobile,
-      });
+      const fullMobile = `${selectedCountry.dialCode}${mobile}`;
+
+      await signupMobileApi(fullMobile);
 
       navigation.navigate('Otp', {
-        mobile,
+        mobile: fullMobile,
         countryCode: selectedCountry.dialCode,
       });
+
     } catch (err: any) {
       Alert.alert('Error', err.message);
     }

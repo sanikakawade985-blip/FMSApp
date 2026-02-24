@@ -5,8 +5,6 @@ import {
   Image,
   ImageBackground,
   Pressable,
-  Modal,
-  FlatList,
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -14,27 +12,22 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState, useMemo } from 'react';
 import AppButton from '../../components/AppButton';
 import { COLORS } from '../../theme/colors';
-import { COUNTRIES, Country } from '../../data/countries';
-import { getDefaultCountry } from '../../utils/countryUtils';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GlobalStyles } from '../../styles/globalStyles';
-import { sendOtp } from '../../services/authApi';
+import { sendOtpApi } from '../../services/authApi';
 
 type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
-  Otp: { mobile: string; countryCode: string };
+  Otp: { mobile: string; serverOtp: number; token: string; userId: number; role: string};
 };
 
 export default function LoginScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
 
-  const defaultCountry = useMemo(() => getDefaultCountry(), []);
-  const [selectedCountry, setSelectedCountry] =
-    useState<Country>(defaultCountry);
   const [mobile, setMobile] = useState('');
-  const [countryModalVisible, setCountryModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const isValidMobile = useMemo(() => {
     const cleaned = mobile.replace(/\D/g, '');
@@ -42,24 +35,17 @@ export default function LoginScreen() {
   }, [mobile]);
 
   const login = async () => {
-    if (!isValidMobile) {
-      Alert.alert(
-        'Invalid Mobile Number',
-        'Please enter a valid mobile number (7-15 digits).'
-      );
-      return;
-    }
-
     try {
-      await sendOtp({
-        countryCode: selectedCountry.dialCode,
-        mobile,
-      });
+      const res = await sendOtpApi(mobile);
 
       navigation.navigate('Otp', {
         mobile,
-        countryCode: selectedCountry.dialCode,
+        serverOtp: res.ResultData.OTP,
+        token: res.ResultData.Token,
+        userId: res.ResultData.UserID,
+        role: res.ResultData.UserGroupName,
       });
+
     } catch (e: any) {
       Alert.alert('Error', e.message);
     }
@@ -83,48 +69,6 @@ export default function LoginScreen() {
       <Text style={GlobalStyles.subtitle}>
         Please enter your details to access your account
       </Text>
-
-      <Text style={GlobalStyles.label}>Country Code</Text>
-      <Pressable
-        style={GlobalStyles.dropdownWrapper}
-        onPress={() => setCountryModalVisible(true)}
-      >
-        <Text style={GlobalStyles.dropdownText}>
-          {selectedCountry.flag} {selectedCountry.dialCode}
-        </Text>
-      </Pressable>
-
-      <Modal
-        transparent
-        animationType="fade"
-        visible={countryModalVisible}
-        onRequestClose={() => setCountryModalVisible(false)}
-      >
-        <Pressable
-          style={GlobalStyles.modalOverlay}
-          onPress={() => setCountryModalVisible(false)}
-        >
-          <View style={GlobalStyles.modalContent}>
-            <FlatList
-              data={COUNTRIES}
-              keyExtractor={(item) => item.isoCode}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={GlobalStyles.modalItem}
-                  onPress={() => {
-                    setSelectedCountry(item);
-                    setCountryModalVisible(false);
-                  }}
-                >
-                  <Text style={GlobalStyles.modalItemText}>
-                    {item.flag} {item.name} ({item.dialCode})
-                  </Text>
-                </Pressable>
-              )}
-            />
-          </View>
-        </Pressable>
-      </Modal>
 
       <Text style={GlobalStyles.label}>Mobile Number</Text>
       <TextInput

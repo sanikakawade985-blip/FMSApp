@@ -12,8 +12,6 @@ import { useAuthStore } from '../../store/authStore';
 import AppButton from '../../components/AppButton';
 import { GlobalStyles } from '../../styles/globalStyles';
 import { COLORS } from '../../theme/colors';
-import { loginByPhone } from '../../services/authService';
-import { verifyOtp as verifyOtpApi } from '../../services/authApi';
 
 const OTP_LENGTH = 4;
 
@@ -21,10 +19,21 @@ export default function OtpScreen() {
   const route = useRoute();
   const navigation = useNavigation();
 
-  const { mobile, countryCode } = (route.params || {}) as {
-    mobile: string;
-    countryCode: string;
-  };
+  const {
+  mobile,
+  countryCode,
+  serverOtp,
+  token,
+  userId,
+  role,
+} = route.params as {
+  mobile: string;
+  countryCode: string;
+  serverOtp: number;
+  token: string;
+  userId: number;
+  role: string;
+};
 
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [focusedIndex, setFocusedIndex] = useState(0);
@@ -37,39 +46,19 @@ export default function OtpScreen() {
     inputRefs.current[0]?.focus();
   }, []);
 
-  const verifyOtp = async () => {
-    try {
+    const verifyOtp = () => {
       if (!isOtpComplete) {
         Alert.alert('Error', 'Please enter complete OTP');
         return;
       }
 
-      if (otp.join('') !== '1234') {
+      if (Number(otp.join('')) !== serverOtp) {
         Alert.alert('Error', 'Invalid OTP');
         return;
       }
 
-      // const res = await verifyOtpApi({
-      //   countryCode,
-      //   mobile,
-      //   otp: otp.join(''),
-      // });
-
-      // if (!res.success) {
-      //   Alert.alert('Error', 'Invalid OTP');
-      //   return;
-      // }
-
-      const user = await loginByPhone(mobile);
-
-      setAuth(user.id, user.role);
-    } catch (err) {
-      Alert.alert(
-        'Error',
-        err instanceof Error ? err.message : 'Something went wrong'
-      );
-    }
-  };
+      setAuth(String(userId), role as any);
+    };
 
   const handleOtpChange = (value: string, index: number) => {
     if (!/^\d?$/.test(value)) return;
