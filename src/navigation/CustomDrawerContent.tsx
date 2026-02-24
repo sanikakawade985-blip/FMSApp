@@ -4,11 +4,13 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { COLORS } from '../theme/colors';
 import { useState } from 'react';
+import { useAuthStore } from '../store/authStore';
 
 export default function CustomDrawerContent({ navigation }: DrawerContentComponentProps) {
 
   const [ showLogoutModal, setShowLogoutModal ] = useState(false);
   const [ showCheckOutModal, setShowCheckOutModal ] = useState(false);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
 
   return (
     <View style={styles.container}>
@@ -100,7 +102,7 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
               style={styles.confirmBtn}
               onPress={() => {
                 setShowLogoutModal(false);
-                console.log('Confirmed Logout');
+                clearAuth();
               }}
             >
               <Text style={styles.confirmText}>LOGOUT</Text>
