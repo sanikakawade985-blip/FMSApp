@@ -1,6 +1,8 @@
 // src/navigation/TechnicianTabs.tsx
+
 import { View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import AppHeader from '../components/AppHeader';
 import BottomTabBar from '../components/BottomTabBar';
@@ -20,7 +22,8 @@ import HelpScreen from '../screens/technician/HelpScreen';
 import HelpMessagesScreen from '../screens/technician/HelpMsgScreen';
 
 import TechProfileScreen from '../screens/techDrawer/TechProfileScreen';
-import InventoryScreen from '../screens/techDrawer/InventoryScreen';
+import IssuedItems from '../screens/techDrawer/IssuedItems';
+import RequestedItems from '../screens/techDrawer/RequestedItems';
 import ExpenditureScreen from '../screens/techDrawer/ExpenditureScreen';
 import ServiceScreen from '../screens/techDrawer/ServiceScreen';
 import AIScreen from '../screens/techDrawer/AIScreen';
@@ -39,7 +42,8 @@ export type TechnicianTabParamList = {
   help: undefined;
   helpMessages: undefined;
   Profile: undefined;
-  'Item Inventory': undefined;
+  'Issued Items': undefined;
+  'Requested Items': undefined;
   Expenditure: undefined;
   'Routine Service': undefined;
   'FieldWeb AI': undefined;
@@ -54,16 +58,20 @@ export default function TechnicianTabs() {
       <Tab.Navigator
         initialRouteName="Home"
         screenOptions={{ headerShown: false }}
-        tabBar={(props) => {
+        tabBar={(props: BottomTabBarProps) => {
           const currentRoute =
             props.state.routes[props.state.index].name;
 
-          const hideTabBar = currentRoute === 'help' || currentRoute === 'helpMessages' || currentRoute === 'Settings' || currentRoute === 'FieldWeb AI';
+          const hideTabBar =
+            currentRoute === 'help' ||
+            currentRoute === 'helpMessages' ||
+            currentRoute === 'Settings' ||
+            currentRoute === 'FieldWeb AI';
 
           return (
             <>
               <AppHeader
-                title={getTitle(props.state)}
+                title={getTitle(currentRoute)}
                 navigation={props.navigation}
               />
 
@@ -81,13 +89,14 @@ export default function TechnicianTabs() {
         <Tab.Screen name="AddQuote" component={AddQuoteScreen} />
         <Tab.Screen name="AddInvoice" component={AddInvoiceScreen} />
         <Tab.Screen name="AddLead" component={AddLeadScreen} />
-        
+
         <Tab.Screen name="notification" component={NotificationScreen} />
         <Tab.Screen name="help" component={HelpScreen} />
         <Tab.Screen name="helpMessages" component={HelpMessagesScreen} />
 
         <Tab.Screen name="Profile" component={TechProfileScreen} />
-        <Tab.Screen name="Item Inventory" component={InventoryScreen} />
+        <Tab.Screen name="Issued Items" component={IssuedItems} />
+        <Tab.Screen name="Requested Items" component={RequestedItems} />
         <Tab.Screen name="Expenditure" component={ExpenditureScreen} />
         <Tab.Screen name="Routine Service" component={ServiceScreen} />
         <Tab.Screen name="FieldWeb AI" component={AIScreen} />
@@ -97,16 +106,16 @@ export default function TechnicianTabs() {
   );
 }
 
-function getTitle(state: any) {
-  const routeName = state.routes[state.index].name;
+//  function getTitle(state: any) {
+//   const routeName = state.routes[state.index].name;
 
+function getTitle(routeName: string) {
   switch (routeName) {
     case 'Home':
       return 'FieldWeb';
     case 'Task':
       return 'Tasks';
     case 'Attendance':
-      return 'Attendance';
     case 'Leave':
       return 'Attendance';
     case 'Passbook':
@@ -114,13 +123,13 @@ function getTitle(state: any) {
     case 'notification':
       return 'Notification';
     case 'help':
-      return 'Help & Support';
     case 'helpMessages':
       return 'Help & Support';
-    case 'Item Inventory':
+    case 'Issued Items':
+    case 'Requested Items':
       return 'Item Inventory';
     case 'Expenditure':
-      return 'Passbook';
+      return 'Expenditure';
     case 'Routine Service':
       return 'Routine Service';
     case 'FieldWeb AI':

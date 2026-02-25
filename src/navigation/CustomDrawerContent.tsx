@@ -56,7 +56,7 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
       <DrawerItem
         icon="cube-outline"
         label="Item Inventory"
-        onPress={() => navigation.navigate('MainTabs', { screen: 'Item Inventory' })}
+        onPress={() => navigation.navigate('MainTabs', { screen: 'Issued Items' })}
       />
 
       <DrawerItem
