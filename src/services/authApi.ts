@@ -30,7 +30,10 @@ export const sendOtpApi = async (mobile: string) => {
     throw new Error('Invalid server response');
   }
 
-  console.log('Parsed data:', data);
+  console.log('LOGIN PARSED DATA:', data);
+  console.log('USER ID:', data?.ResultData?.UserID);
+  console.log('TOKEN:', data?.ResultData?.Token);
+  console.log('ROLE:', data?.ResultData?.UserGroupName);
   console.log('REQUEST BODY:', {
     UserName: mobile,
     Password: '',

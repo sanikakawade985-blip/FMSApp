@@ -6,15 +6,18 @@ import {
   ImageBackground,
   Pressable,
   Alert,
+  Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import AppButton from '../../components/AppButton';
 import { COLORS } from '../../theme/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GlobalStyles } from '../../styles/globalStyles';
 import { sendOtpApi } from '../../services/authApi';
+import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import * as Geolocation from 'react-native-geolocation-service';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -29,6 +32,10 @@ export default function LoginScreen() {
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
   const isValidMobile = useMemo(() => {
     const cleaned = mobile.replace(/\D/g, '');
     return cleaned.length >= 7 && cleaned.length <= 15;
@@ -37,6 +44,10 @@ export default function LoginScreen() {
   const login = async () => {
     try {
       const res = await sendOtpApi(mobile);
+
+      console.log('LOGIN RESULTDATA:', res.ResultData);
+      console.log('USER ID FROM LOGIN:', res.ResultData.UserID);
+      console.log('TOKEN FROM LOGIN:', res.ResultData.Token);
 
       navigation.navigate('Otp', {
         mobile,
@@ -48,6 +59,23 @@ export default function LoginScreen() {
 
     } catch (e: any) {
       Alert.alert('Error', e.message);
+    }
+  };
+
+  const requestLocationPermission = async () => {
+    try {
+      const permission =
+        Platform.OS === 'android'
+          ? PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION
+          : PERMISSIONS.IOS.LOCATION_WHEN_IN_USE;
+
+      const result = await request(permission);
+
+      if (result !== RESULTS.GRANTED) {
+        Alert.alert('Permission Required', 'Location permission is required');
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 

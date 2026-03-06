@@ -1,27 +1,93 @@
-import { View, Text, StyleSheet, ScrollView, Dimensions, Pressable, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  Pressable,
+  Modal,
+  Alert,
+} from 'react-native';
 import { COLORS } from '../../theme/colors';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDoubleBackExit } from '../../../hooks/useDoubleBackExit';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-const { height } = Dimensions.get('window');
+import { useAuthStore } from '../../store/authStore';
+import {
+  addAttendanceApi,
+  getTodayAttendanceExistsApi,
+} from '../../services/attendanceApi';
 
 export default function HomeScreen() {
-    const [filter, setFilter] = useState<'Today' | 'Week' | 'Month' | 'Year'>(
-      'Today'
-    );
-    const [dropdownVisible, setDropdownVisible] = useState(false);
-    useDoubleBackExit();
+  const [filter, setFilter] = useState<'Today' | 'Week' | 'Month' | 'Year'>(
+    'Today'
+  );
+
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+
+  const token = useAuthStore((state) => state.token);
+  const userId = useAuthStore((state) => state.uid);
+  const name = useAuthStore((s) => s.name ?? 'Technician');
+
+  const { height } = Dimensions.get('window');
+
+  useDoubleBackExit();
+
+  useEffect(() => {
+    checkAttendance();
+  }, [token, userId]);
+
+  const checkAttendance = async () => {
+    if (!token || !userId) return;
+
+    try {
+      const res = await getTodayAttendanceExistsApi(token, Number(userId));
+
+      const message = (res?.Message || '').toLowerCase();
+
+      const attendanceExists =
+        message.includes('exist') || message.includes('already');
+
+      if (!attendanceExists) {
+        setShowCheckInModal(true);
+      }
+
+    } catch (err) {
+      console.log('Attendance check failed', err);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    try {
+      if (!token || !userId) return;
+
+      const latitude = '18.5204';
+      const longitude = '73.8567';
+
+      await addAttendanceApi(token, Number(userId), latitude, longitude);
+
+      setShowCheckInModal(false);
+
+      Alert.alert('Checked In Successfully');
+    } catch (e: any) {
+      Alert.alert(e.message);
+    }
+  };
 
   return (
     <View style={styles.root}>
       <View style={styles.redBg} />
 
       <View style={styles.greetingRow}>
-        <Text style={styles.headerGreeting}>Hello, Technician</Text>
-        <Pressable style={styles.filterButton} onPress={() => setDropdownVisible(true)} >
+        <Text style={styles.headerGreeting}>Hello, {name}</Text>
+
+        <Pressable
+          style={styles.filterButton}
+          onPress={() => setDropdownVisible(true)}
+        >
           <Text style={styles.headerSub}>{filter}</Text>
-          <Ionicons name="chevron-down" size={18} color="#FEE2E2" />
+          <Ionicons name="chevron-down" size={20} color="#FEE2E2" />
         </Pressable>
       </View>
 
@@ -35,23 +101,26 @@ export default function HomeScreen() {
           <View style={styles.progressFill} />
         </View>
 
-        <Text style={styles.dateText}>Showing data for <Text style={[{color: '#212121'}]}>03-02-2026</Text></Text>
-
-        <View style={styles.progressRow}>
-          <View style={styles.circleWrapper}>
-            <View style={styles.circle}>
-              <Text style={styles.circleValue}>0</Text>
-              <Text style={styles.circleLabel}>Total Task</Text>
-            </View>
-          </View>
-
-          <View style={styles.stats}>
-            <Text style={[styles.stat, { color: '#08cb50' }]}>00  Completed</Text>
-            <Text style={[styles.stat, { color: '#f97316' }]}>00  Ongoing</Text>
-            <Text style={[styles.stat, { color: '#9ca3af' }]}>00  InActive</Text>
-            <Text style={[styles.stat, { color: '#dc2626' }]}>00  Rejected</Text>
-            <Text style={styles.stat}>00  OnHold</Text>
-          </View>
+        <Text style={styles.dateText}>
+          Showing data for{' '}
+          <Text style={{ color: '#212121' }}>
+            {new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}
+          </Text>
+        </Text>
+        <View style={styles.progressRow}> 
+          <View style={styles.circleWrapper}> 
+            <View style={styles.circle}> 
+              <Text style={styles.circleValue}>0</Text> 
+              <Text style={styles.circleLabel}>Total Task</Text> 
+            </View> 
+          </View> 
+          <View style={styles.stats}> 
+            <Text style={[styles.stat, { color: '#08cb50' }]}>00 Completed</Text> 
+            <Text style={[styles.stat, { color: '#f97316' }]}>00 Ongoing</Text> 
+            <Text style={[styles.stat, { color: '#9ca3af' }]}>00 InActive</Text> 
+            <Text style={[styles.stat, { color: '#dc2626' }]}>00 Rejected</Text> 
+            <Text style={styles.stat}>00 OnHold</Text> 
+          </View> 
         </View>
       </ScrollView>
 
@@ -62,123 +131,129 @@ export default function HomeScreen() {
         onRequestClose={() => setDropdownVisible(false)}
       >
         <Pressable onPress={() => setDropdownVisible(false)} />
-          <View style={styles.dropdown}>
-            {(['Today', 'Week', 'Month', 'Year'] as const).map((item) => (
-              <Pressable
-                key={item}
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setFilter(item);
-                  setDropdownVisible(false);
-                }}
-              >
-                <Text style={styles.dropdownText}>{item}</Text>
-              </Pressable>
-            ))}
+        <View style={styles.dropdown}>
+          {(['Today', 'Week', 'Month', 'Year'] as const).map((item) => (
+            <Pressable
+              key={item}
+              style={styles.dropdownItem}
+              onPress={() => {
+                setFilter(item);
+                setDropdownVisible(false);
+              }}
+            >
+              <Text style={styles.dropdownText}>{item}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </Modal>
+
+      <Modal transparent visible={showCheckInModal} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottomSheet}>
+
+            <Text style={styles.modalTitle}>Check-in for</Text>
+
+            <Text style={styles.modalDate}>
+              {new Date().toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </Text>
+
+            <Pressable style={styles.confirmBtn} onPress={handleCheckIn}>
+              <Text style={styles.confirmText}>CHECK-IN</Text>
+            </Pressable>
+
           </View>
+        </View>
       </Modal>
     </View>
   );
 }
 
+const { height } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.primary },
-  redBg: {
-    top: 0,
-    height: height * 0.1,
-    backgroundColor: COLORS.primary,
-  },
+  redBg: { top: 0, height: height * 0.1, backgroundColor: COLORS.primary },
   whiteSheet: {
     flex: 1,
     backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    //marginTop: 1,
     padding: 10,
   },
-  profileTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 3,
-  },
-  progressFill: {
-    width: '70%',
-    height: 6,
-    backgroundColor: '#f59e0b',
-    borderRadius: 3,
-  },
-  dateText: {
-    marginVertical: 12,
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  circleWrapper: { alignItems: 'center', marginVertical: 20 },
-  circle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 12,
-    borderColor: '#2563eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleValue: { fontSize: 28, fontWeight: '700' },
-  circleLabel: { color: '#6b7280', fontSize: 16, fontWeight: '400' },
-  stats: { marginTop: 10 },
-  stat: { fontSize: 16, marginVertical: 4, fontWeight: '500' },
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-  },
   greetingRow: {
-    marginBottom: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    backgroundColor: COLORS.primary,
-    height: 40,
+    paddingVertical: 10,
+    height: 50,
   },
-
-  headerGreeting: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 35,
-  },
-
-  headerSub: {
-    fontSize: 16,
-    color: COLORS.white,
-    fontWeight: 400,
-  },
+  headerGreeting: { fontSize: 22, fontWeight: '500', color: '#fff' },
+  filterButton: { flexDirection: 'row', alignItems: 'center', gap: 35 },
+  headerSub: { fontSize: 20, color: COLORS.white },
 
   dropdown: {
     position: 'absolute',
     top: 75,
     right: 18,
     backgroundColor: '#fff',
-    borderRadius: 2,
     width: 140,
     elevation: 6,
   },
+  dropdownItem: { padding: 12 },
+  dropdownText: { fontSize: 14 },
 
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
 
-  dropdownText: {
-    fontSize: 14,
-    color: COLORS.textQuaternary,
-    fontWeight: '500',
+  bottomSheet: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    height: 250,
   },
+
+  modalTitle: {
+    fontSize: 22,
+    paddingVertical: 15,
+    textAlign: 'center',
+  },
+
+  modalDate: {
+    fontSize: 30,
+    textAlign: 'center',
+    marginBottom: 30,
+    fontWeight: '400',
+  },
+
+  confirmBtn: {
+    padding: 10,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 60,
+  },
+
+  confirmText: { fontSize: 22, color: '#fff' },
+
+  profileTitle: { fontSize: 18, fontWeight: '500', marginBottom: 10, paddingLeft: 10 }, 
+  progressBar: { height: 6, backgroundColor: '#e5e7eb', borderRadius: 3 }, 
+  progressFill: { width: '70%', height: 6, backgroundColor: '#f59e0b', borderRadius: 3, }, 
+  dateText: { marginVertical: 12, fontSize: 18, color: '#6b7280' },
+
+  circleWrapper: { alignItems: 'center', marginVertical: 20 }, 
+  circle: { width: 200, height: 200, borderRadius: 100, borderWidth: 18, borderColor: '#2563eb', alignItems: 'center', justifyContent: 'center', }, 
+  circleValue: { fontSize: 28, fontWeight: '700' }, 
+  circleLabel: { color: '#6b7280', fontSize: 18 }, 
+  stats: { marginTop: 10 }, 
+  stat: { fontSize: 18, marginVertical: 4, fontWeight: '500', paddingVertical: 10 }, 
+  progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, },
 });
