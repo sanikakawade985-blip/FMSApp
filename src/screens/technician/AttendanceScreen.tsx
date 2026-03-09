@@ -205,23 +205,31 @@ export default function AttendanceScreen() {
           </View>
         </View>
 
-        <View style={styles.checkCard}>
-          <Text style={styles.checkText}>
-            {today.toLocaleDateString(undefined, { weekday: 'long' })}
-          </Text>
+          <View style={styles.checkCard}>
+            <View style={styles.line}>
+              <Text style={styles.checkText}>
+                {today.toLocaleDateString(undefined, { weekday: 'long' })}
+              </Text>
 
-          <Text style={styles.checkText}>
-            CheckIn : {selectedAttendance?.CheckIn
-              ? new Date(selectedAttendance.CheckIn).toLocaleTimeString('en-IN')
-              : '--'}
-          </Text>
+              <Text style={styles.checkText}>
+                {'\t\t\t'} CheckIn {'\t\t'}:{'\t'} {selectedAttendance?.CheckIn
+                  ? new Date(selectedAttendance.CheckIn).toLocaleTimeString('en-JP')
+                  : '-NA-'}
+              </Text>
+            </View>
+            <View style={styles.line}>
+              <Text style={styles.checkText}>
+                {new Date().toLocaleDateString('en-JP').replace(/\//g, '-')}
+              </Text>
 
-          <Text style={styles.checkText}>
-            CheckOut : {selectedAttendance?.CheckOut
-              ? new Date(selectedAttendance.CheckOut).toLocaleTimeString('en-IN')
-              : '--'}
-          </Text>
-        </View>
+              <Text style={styles.checkText}>
+                CheckOut {'\t'}:{'\t'} {selectedAttendance?.CheckOut
+                  ? new Date(selectedAttendance.CheckOut).toLocaleTimeString('en-JP')
+                  : '-NA-'}
+              </Text>
+            </View>
+          </View>
+
       </ScrollView>
     </View>
   );
@@ -324,15 +332,17 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 100,
+    marginTop: 50,
   },
 
   summaryCard: {
-    width: 100,
-    height: 140,
+    width: 90,
+    height: 120,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 10,
+    margin: 5,
   },
 
   summaryText: {
@@ -355,7 +365,12 @@ const styles = StyleSheet.create({
   },
 
   checkText: {
-    fontSize: 14,
+    fontSize: 16,
     marginVertical: 4,
+    marginRight: '20%',
   },
+
+  line: {
+    flexDirection: 'row',
+  }
 });
