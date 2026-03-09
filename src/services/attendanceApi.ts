@@ -18,7 +18,7 @@ export const addAttendanceApi = async (
       AttendanceDate: new Date().toISOString(),
       AttendanceTypeId: 1,
       CreatedBy: userId,
-      UpdatedBy: '',
+      UpdatedBy: userId,
       IsSuccessful: true,
       IsModelError: false,
       AttendanceMarkedPlace: 'Mobile App',
@@ -30,8 +30,16 @@ export const addAttendanceApi = async (
 
   const data = await response.json();
 
-  if (!response.ok || data.Code != 200) {
+  if (!response.ok) {
+    throw new Error(data?.Message || 'Attendance request failed');
+  }
+
+  if (data.Code !== '200') {
     throw new Error(data?.Message || 'Attendance failed');
+  }
+
+  if (data.ResultData?.IsModelError) {
+    throw new Error('Attendance model validation failed');
   }
 
   return data;
@@ -67,7 +75,7 @@ export const checkoutAttendanceApi = async (
 
   const data = await response.json();
 
-  if (!response.ok || data.Code != 200) {
+  if (!response.ok || data.Code != '200') {
     throw new Error(data?.Message || 'Checkout failed');
   }
 
@@ -91,7 +99,7 @@ export const getAttendanceMonthlyForTechnicianApi = async (
 
   const data = await response.json();
 
-  if (!response.ok || data.Code != 200) {
+  if (!response.ok || data.Code != '200') {
     throw new Error(data?.Message || 'Failed to fetch attendance');
   }
 

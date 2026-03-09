@@ -4,48 +4,50 @@ const BASE_URL = 'http://98.70.36.167:801/API/api';
 // STEP 1 – Send OTP
 //
 export const sendOtpApi = async (mobile: string) => {
+  const payload = {
+    UserName: mobile,
+    Password: '',
+    AndroidID: 'mobile-app',
+    UserID: 0,
+    UserPreferredLanguage: 'en',
+    PortalDeviceId: 'mobile',
+  };
+
   const response = await fetch(`${BASE_URL}/Login/UserLoginMobile`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      UserName: mobile,
-      Password: '',
-      AndroidID: 'mobile-app',
-      UserID: 0,
-      UserPreferredLanguage: 'en',
-      PortalDeviceId: 'mobile',
-    }),
+    body: JSON.stringify(payload),
   });
 
-  const text = await response.text();
-  console.log('LOGIN RAW RESPONSE:', text);
-
   let data;
+
   try {
-    data = JSON.parse(text);
-  } catch {
+    data = await response.json();
+  } catch (err) {
+    console.log('LOGIN PARSE ERROR:', err);
     throw new Error('Invalid server response');
   }
 
-  console.log('LOGIN PARSED DATA:', data);
-  console.log('USER ID:', data?.ResultData?.UserID);
-  console.log('TOKEN:', data?.ResultData?.Token);
-  console.log('ROLE:', data?.ResultData?.UserGroupName);
-  console.log('REQUEST BODY:', {
-    UserName: mobile,
-    Password: '',
+  console.log('LOGIN RESPONSE:', {
+    code: data?.Code,
+    message: data?.Message,
+    userId: data?.ResultData?.UserID,
+    role: data?.ResultData?.UserGroupName,
   });
 
-  if (!response.ok || data.Code != 200) {
+  if (!response.ok) {
+    throw new Error('Network error while requesting OTP');
+  }
+
+  if (data?.Code !== '200') {
     throw new Error(data?.Message || 'Login failed');
   }
 
   return data;
 };
-
 
 //
 // STEP 2 – Verify OTP (⚠️ replace endpoint if different)

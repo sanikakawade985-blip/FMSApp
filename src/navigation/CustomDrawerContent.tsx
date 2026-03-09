@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Modal, Alert } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { COLORS } from '../theme/colors';
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { checkoutAttendanceApi } from '../services/attendanceApi';
 
 export default function CustomDrawerContent({ navigation }: DrawerContentComponentProps) {
 
@@ -13,6 +14,34 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const name = useAuthStore((state) => state.name);
   const phone = useAuthStore((state) => state.phone);
+
+  const token = useAuthStore((state) => state.token);
+  const userId = useAuthStore((state) => state.uid);
+
+  const handleCheckout = async () => {
+    try {
+      if (!token || !userId) return;
+
+      const latitude = '18.5204';
+      const longitude = '73.8567';
+
+      const res = await checkoutAttendanceApi(
+        token,
+        Number(userId),
+        latitude,
+        longitude
+      );
+
+      console.log('CHECKOUT RESPONSE:', res);
+
+      setShowCheckOutModal(false);
+
+      Alert.alert('Success', 'Checked Out Successfully');
+
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -128,10 +157,7 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
 
             <Pressable
               style={styles.confirmBtn}
-              onPress={() => {
-                setShowCheckOutModal(false);
-                console.log('Confirmed Check Out');
-              }}
+              onPress={handleCheckout}
             >
               <Text style={styles.confirmText}>CHECK-OUT</Text>
             </Pressable>
