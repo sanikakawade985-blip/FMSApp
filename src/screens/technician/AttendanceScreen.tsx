@@ -1,382 +1,3 @@
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   ScrollView,
-//   Pressable,
-// } from 'react-native';
-// import { useState, useCallBack } from 'react';
-// import { COLORS } from '../../theme/colors';
-// import { useNavigation, useFocusEffect } from '@react-navigation/native';
-// import { TechnicianTabParamList } from '../../navigation/TechnicianTabs';
-// import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-// import { getAttendanceMonthlyForTechnicianApi } from '../../services/attendanceApi';
-// import { useAuthStore } from '../../store/authStore';
-
-// type NavigationProp = BottomTabNavigationProp<
-//   TechnicianTabParamList,
-//   'Attendance'
-// >;
-
-// const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-// export default function AttendanceScreen() {
-//   const navigation = useNavigation<NavigationProp>();
-
-//   const [attendanceData, setAttendanceData] = useState<any[]>([]);
-//   const [selectedDate, setSelectedDate] = useState<number>(new Date().getDate());
-
-//   const token = useAuthStore((s) => s.token);
-//   const userId = useAuthStore((s) => s.uid);
-
-//   useFocusEffect(
-//    useCallback(() => {
-//      loadAttendance();
-//    }, [token, userId])
-//   );
-
-//   const loadAttendance = async () => {
-//     try {
-//       if (!token || !userId) return;
-
-//       const startDate = new Date(
-//         new Date().getFullYear(),
-//         new Date().getMonth(),
-//         1
-//       ).toISOString();
-
-//       const res = await getAttendanceRecordsApi(
-//         token,
-//         Number(userId),
-//         startDate
-//       );
-
-//       if (Array.isArray(res?.ResultData)) {
-//         setAttendanceData(res.ResultData);
-//       } else {
-//         setAttendanceData([]);
-//       }
-//     } catch (err) {
-//       console.log(err);
-//       setAttendanceData([]);
-//     }
-//   };
-
-//   const today = new Date();
-//   const year = today.getFullYear();
-//   const month = today.getMonth();
-
-//   const firstDay = new Date(year, month, 1).getDay();
-//   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-//   const attendanceMap = (attendanceData || []).reduce((acc: any, item: any) => {
-//     const d = new Date(item.Date);
-
-//     const date =
-//       d.getFullYear() +
-//       '-' +
-//       String(d.getMonth() + 1).padStart(2, '0') +
-//       '-' +
-//       String(d.getDate()).padStart(2, '0');
-
-//     acc[date] = item;
-//     return acc;
-//   }, {});
-
-//   const renderCalendar = () => {
-//     const cells = [];
-
-//     for (let i = 0; i < firstDay; i++) {
-//       cells.push(<View key={i} style={styles.dayCell} />);
-//     }
-
-//     for (let day = 1; day <= daysInMonth; day++) {
-//       const selected = selectedDate === day;
-
-//       const dateStr = `${year}-${String(month + 1).padStart(
-//         2,
-//         '0'
-//       )}-${String(day).padStart(2, '0')}`;
-
-//       const attendance = attendanceMap[dateStr];
-
-//       let dotColor;
-
-//       if (attendance?.Attendance === 'Present') dotColor = '#22c55e';
-//       if (attendance?.Attendance === 'Absent') dotColor = '#f87171';
-//       if (attendance?.Attendance === 'Idle') dotColor = '#f59e0b';
-//       if (attendance?.Attendance === 'Leave') dotColor = '#000';
-
-//       const isFuture = new Date(year, month, day) > today;
-
-//       cells.push(
-//         <Pressable
-//           key={day}
-//           style={[styles.dayCell, selected && styles.selectedDay]}
-//           onPress={() => setSelectedDate(day)}
-//         >
-//           <Text
-//             style={[
-//               styles.dayText,
-//               isFuture && { color: '#ccc' },
-//               selected && styles.selectedText,
-//             ]}
-//           >
-//             {day}
-//           </Text>
-
-//           {dotColor && (
-//             <View style={[styles.dot, { backgroundColor: dotColor }]} />
-//           )}
-//         </Pressable>
-//       );
-//     }
-
-//     return cells;
-//   };
-
-//   const selectedAttendance = attendanceData.find(
-//     (a) => new Date(a.Date).getDate() === selectedDate
-//   );
-
-//   const present = attendanceData.filter(
-//     (a) => a.Attendance === 'Present'
-//   ).length;
-
-//   const absent = attendanceData.filter(
-//     (a) => a.Attendance === 'Absent'
-//   ).length;
-
-//   const idle = attendanceData.filter(
-//     (a) => a.Attendance === 'Idle'
-//   ).length;
-
-//   const leave = attendanceData.filter(
-//     (a) => a.Attendance === 'Leave'
-//   ).length;
-
-//   return (
-//     <View style={styles.root}>
-//       <ScrollView showsVerticalScrollIndicator={false}>
-//         <View style={styles.tabRow}>
-//           <Pressable style={styles.activeTab}>
-//             <Text style={styles.activeTabText}>ATTENDANCE</Text>
-//           </Pressable>
-
-//           <Pressable
-//             style={styles.inactiveTab}
-//             onPress={() => navigation.navigate('Leave')}
-//           >
-//             <Text style={styles.inactiveTabText}>LEAVES</Text>
-//           </Pressable>
-//         </View>
-
-//         <Text style={styles.monthText}>
-//           {today.toLocaleString('default', { month: 'long', year: 'numeric' })}
-//         </Text>
-
-//         <View style={styles.weekRow}>
-//           {DAYS.map((d, i) => (
-//             <Text key={i} style={styles.weekText}>
-//               {d}
-//             </Text>
-//           ))}
-//         </View>
-
-//         <View style={styles.calendarGrid}>{renderCalendar()}</View>
-
-//         <View style={styles.summaryRow}>
-//           <View style={[styles.summaryCard, { backgroundColor: '#f87171' }]}>
-//             <Text style={styles.summaryText}>Total Absent</Text>
-//             <Text style={styles.summaryValue}>{absent}</Text>
-//           </View>
-
-//           <View style={[styles.summaryCard, { backgroundColor: '#22c55e' }]}>
-//             <Text style={styles.summaryText}>Total Present</Text>
-//             <Text style={styles.summaryValue}>{present}</Text>
-//           </View>
-
-//           <View style={[styles.summaryCard, { backgroundColor: '#f59e0b' }]}>
-//             <Text style={styles.summaryText}>Total Idle</Text>
-//             <Text style={styles.summaryValue}>{idle}</Text>
-//           </View>
-
-//           <View style={[styles.summaryCard, { backgroundColor: '#000' }]}>
-//             <Text style={styles.summaryText}>Total Leave</Text>
-//             <Text style={styles.summaryValue}>{leave}</Text>
-//           </View>
-//         </View>
-
-//           <View style={styles.checkCard}>
-//             <View style={styles.line}>
-//               <Text style={styles.checkText}>
-//                 {today.toLocaleDateString(undefined, { weekday: 'long' })}
-//               </Text>
-
-//               <Text style={styles.checkText}>
-//                 {'\t\t\t'} CheckIn {'\t\t'}:{'\t'} {selectedAttendance?.CheckIn
-//                   ? new Date(selectedAttendance.CheckIn).toLocaleTimeString('en-JP')
-//                   : '-NA-'}
-//               </Text>
-//             </View>
-//             <View style={styles.line}>
-//               <Text style={styles.checkText}>
-//                 {new Date().toLocaleDateString('en-JP').replace(/\//g, '-')}
-//               </Text>
-
-//               <Text style={styles.checkText}>
-//                 CheckOut {'\t'}:{'\t'} {selectedAttendance?.CheckOut
-//                   ? new Date(selectedAttendance.CheckOut).toLocaleTimeString('en-JP')
-//                   : '-NA-'}
-//               </Text>
-//             </View>
-//           </View>
-
-//       </ScrollView>
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   root: { flex: 1, backgroundColor: COLORS.white },
-
-//   tabRow: {
-//     flexDirection: 'row',
-//     height: 140,
-//     paddingTop: 100,
-//   },
-
-//   activeTab: {
-//     borderBottomWidth: 3,
-//     borderColor: COLORS.primary,
-//     backgroundColor: '#f5d7d784',
-//     width: '50%',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-
-//   activeTabText: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//     color: COLORS.primary,
-//   },
-
-//   inactiveTab: {
-//     width: '50%',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-
-//   inactiveTabText: {
-//     fontSize: 18,
-//     color: COLORS.textQuaternary,
-//   },
-
-//   monthText: {
-//     textAlign: 'center',
-//     fontSize: 22,
-//     fontWeight: '600',
-//     color: COLORS.primary,
-//     marginVertical: 15,
-//   },
-
-//   weekRow: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-evenly',
-//   },
-
-//   weekText: {
-//     width: '14%',
-//     textAlign: 'center',
-//     color: '#84868a',
-//     fontWeight: '500',
-//     fontSize: 20,
-//   },
-
-//   calendarGrid: {
-//     flexDirection: 'row',
-//     flexWrap: 'wrap',
-//     paddingHorizontal: 6,
-//   },
-
-//   dayCell: {
-//     width: '14%',
-//     height: 44,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     marginVertical: 6,
-//   },
-
-//   dayText: {
-//     fontSize: 18,
-//     color: '#111',
-//   },
-
-//   selectedDay: {
-//     backgroundColor: '#22c55e',
-//     borderRadius: 100,
-//     width: 50,
-//     height: 50,
-//   },
-
-//   selectedText: {
-//     color: '#fff',
-//     fontWeight: '600',
-//   },
-
-//   dot: {
-//     width: 8,
-//     height: 8,
-//     borderRadius: 6,
-//     marginTop: 4,
-//   },
-
-//   summaryRow: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-around',
-//     marginTop: 50,
-//   },
-
-//   summaryCard: {
-//     width: 90,
-//     height: 120,
-//     borderRadius: 14,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     paddingHorizontal: 10,
-//     margin: 5,
-//   },
-
-//   summaryText: {
-//     color: '#fff',
-//     fontSize: 18,
-//   },
-
-//   summaryValue: {
-//     color: '#fff',
-//     fontSize: 45,
-//     fontWeight: '700',
-//   },
-
-//   checkCard: {
-//     backgroundColor: '#fff',
-//     margin: 16,
-//     padding: 16,
-//     borderRadius: 14,
-//     elevation: 4,
-//   },
-
-//   checkText: {
-//     fontSize: 16,
-//     marginVertical: 4,
-//     marginRight: '20%',
-//   },
-
-//   line: {
-//     flexDirection: 'row',
-//   }
-// });
-
 import {
   View,
   Text,
@@ -389,7 +10,7 @@ import { COLORS } from '../../theme/colors';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { TechnicianTabParamList } from '../../navigation/TechnicianTabs';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { getAttendanceMonthlyForTechnicianApi } from '../../services/attendanceApi';
+import { getAttendanceTechMonthlyApi } from '../../services/attendanceApi';
 import { useAuthStore } from '../../store/authStore';
 
 type NavigationProp = BottomTabNavigationProp<
@@ -418,10 +39,7 @@ export default function AttendanceScreen() {
     try {
       if (!token || !userId) return;
 
-      const res = await getAttendanceMonthlyForTechnicianApi(
-        token,
-        Number(userId)
-      );
+      const res = await getAttendanceTechMonthlyApi(token, Number(userId));
 
       if (Array.isArray(res?.ResultData)) {
         setAttendanceData(res.ResultData);
@@ -429,7 +47,7 @@ export default function AttendanceScreen() {
         setAttendanceData([]);
       }
     } catch (err) {
-      console.log(err);
+      console.log('Attendance error:', err);
       setAttendanceData([]);
     }
   };
@@ -437,6 +55,7 @@ export default function AttendanceScreen() {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
+
   const selectedFullDate = new Date(year, month, selectedDate);
 
   const firstDay = new Date(year, month, 1).getDay();
@@ -470,10 +89,10 @@ export default function AttendanceScreen() {
 
       let dotColor;
 
-      if (attendance?.Attendance === 'Present') dotColor = '#22c55e';
-      if (attendance?.Attendance === 'Absent') dotColor = '#f87171';
-      if (attendance?.Attendance === 'Idle') dotColor = '#f59e0b';
-      if (attendance?.Attendance === 'Leave') dotColor = '#000';
+      if (attendance?.AttendanceTypeId === 2) dotColor = '#22c55e'; // Present
+      if (attendance?.AttendanceTypeId === 3) dotColor = '#f87171'; // Absent
+      if (attendance?.AttendanceTypeId === 5) dotColor = '#f59e0b'; // Idle
+      if (attendance?.AttendanceTypeId === 6) dotColor = '#000'; // Leave
 
       const isFuture = new Date(year, month, day) > today;
 
@@ -506,24 +125,29 @@ export default function AttendanceScreen() {
   const selectedAttendance = attendanceData.find((a) => {
     if (!a?.Date) return false;
 
-    const day = Number(a.Date.split('T')[0].split('-')[2]);
-    return day === selectedDate;
+    const date = a.Date.split('T')[0];
+    const selected = `${year}-${String(month + 1).padStart(
+      2,
+      '0'
+    )}-${String(selectedDate).padStart(2, '0')}`;
+
+    return date === selected;
   });
 
   const present = attendanceData.filter(
-    (a) => a.Attendance === 'Present'
+    (a) => a.AttendanceTypeId === 2
   ).length;
 
   const absent = attendanceData.filter(
-    (a) => a.Attendance === 'Absent'
+    (a) => a.AttendanceTypeId === 3
   ).length;
 
   const idle = attendanceData.filter(
-    (a) => a.Attendance === 'Idle'
+    (a) => a.AttendanceTypeId === 5
   ).length;
 
   const leave = attendanceData.filter(
-    (a) => a.Attendance === 'Leave'
+    (a) => a.AttendanceTypeId === 6
   ).length;
 
   return (
@@ -581,28 +205,36 @@ export default function AttendanceScreen() {
         <View style={styles.checkCard}>
           <View style={styles.line}>
             <Text style={styles.dateText}>
-              {selectedFullDate.toLocaleDateString(undefined, { weekday: 'long' })}
+              {selectedFullDate.toLocaleDateString(undefined, {
+                weekday: 'long',
+              })}
             </Text>
 
             <Text style={styles.label}>CheckIn :</Text>
 
             <Text style={styles.time}>
               {selectedAttendance?.CheckIn
-                ? new Date(selectedAttendance.CheckIn).toLocaleTimeString('en-JP')
+                ? new Date(selectedAttendance.CheckIn).toLocaleTimeString(
+                    'en-JP'
+                  )
                 : '-NA-'}
             </Text>
           </View>
 
           <View style={styles.line}>
             <Text style={styles.dateText}>
-              {selectedFullDate.toLocaleDateString('en-JP').replace(/\//g, '-')}
+              {selectedFullDate
+                .toLocaleDateString('en-JP')
+                .replace(/\//g, '-')}
             </Text>
 
             <Text style={styles.label}>CheckOut :</Text>
 
             <Text style={styles.time}>
               {selectedAttendance?.CheckOut
-                ? new Date(selectedAttendance.CheckOut).toLocaleTimeString('en-JP')
+                ? new Date(selectedAttendance.CheckOut).toLocaleTimeString(
+                    'en-JP'
+                  )
                 : '-NA-'}
             </Text>
           </View>
@@ -614,7 +246,13 @@ export default function AttendanceScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.white },
-  tabRow: { flexDirection: 'row', height: 140, paddingTop: 100 },
+
+  tabRow: {
+    flexDirection: 'row',
+    height: 140,
+    paddingTop: 100,
+  },
+
   activeTab: {
     borderBottomWidth: 3,
     borderColor: COLORS.primary,
@@ -623,9 +261,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeTabText: { fontSize: 18, fontWeight: '600', color: COLORS.primary },
-  inactiveTab: { width: '50%', alignItems: 'center', justifyContent: 'center' },
-  inactiveTabText: { fontSize: 18, color: COLORS.textQuaternary },
+
+  activeTabText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+
+  inactiveTab: {
+    width: '50%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  inactiveTabText: {
+    fontSize: 18,
+    color: COLORS.textQuaternary,
+  },
+
   monthText: {
     textAlign: 'center',
     fontSize: 22,
@@ -633,7 +286,12 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginVertical: 15,
   },
-  weekRow: { flexDirection: 'row', justifyContent: 'space-evenly' },
+
+  weekRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+  },
+
   weekText: {
     width: '14%',
     textAlign: 'center',
@@ -641,7 +299,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 20,
   },
-  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 6 },
+
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 6,
+  },
+
   dayCell: {
     width: '14%',
     height: 44,
@@ -649,11 +313,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 6,
   },
-  dayText: { fontSize: 18, color: '#111' },
-  selectedDay: { backgroundColor: '#22c55e', borderRadius: 100, width: 50, height: 50 },
-  selectedText: { color: '#fff', fontWeight: '600' },
-  dot: { width: 8, height: 8, borderRadius: 6, marginTop: 4 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 50 },
+
+  dayText: {
+    fontSize: 18,
+    color: '#111',
+  },
+
+  selectedDay: {
+    backgroundColor: '#22c55e',
+    borderRadius: 100,
+    width: 50,
+    height: 50,
+  },
+
+  selectedText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 50,
+  },
+
   summaryCard: {
     width: 90,
     height: 120,
@@ -663,8 +353,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     margin: 5,
   },
-  summaryText: { color: '#fff', fontSize: 18 },
-  summaryValue: { color: '#fff', fontSize: 45, fontWeight: '700' },
+
+  summaryText: {
+    color: '#fff',
+    fontSize: 18,
+  },
+
+  summaryValue: {
+    color: '#fff',
+    fontSize: 45,
+    fontWeight: '700',
+  },
+
   checkCard: {
     backgroundColor: '#fff',
     margin: 16,
@@ -672,7 +372,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     elevation: 4,
   },
-  checkText: { fontSize: 16, marginVertical: 4, marginRight: '20%' },
+
   line: {
     flexDirection: 'row',
     alignItems: 'center',

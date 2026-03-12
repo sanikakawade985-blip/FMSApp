@@ -42,23 +42,30 @@ export default function LoginScreen() {
   }, [mobile]);
 
   const login = async () => {
+    if (!isValidMobile) {
+      Alert.alert("Error", "Please enter valid mobile number");
+      return;
+    }
+
     try {
+      setLoading(true);
+
       const res = await sendOtpApi(mobile);
 
-      console.log('LOGIN RESULTDATA:', res.ResultData);
-      console.log('USER ID FROM LOGIN:', res.ResultData.UserID);
-      console.log('TOKEN FROM LOGIN:', res.ResultData.Token);
+      const result = res?.ResultData;
 
-      navigation.navigate('Otp', {
+      navigation.navigate("Otp", {
         mobile,
-        serverOtp: res.ResultData.OTP,
-        token: res.ResultData.Token,
-        userId: res.ResultData.UserID,
-        role: res.ResultData.UserGroupName,
+        serverOtp: result?.OTP,
+        token: result?.Token,
+        userId: result?.UserID,
+        role: result?.UserGroupName,
       });
 
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      Alert.alert("Login Failed", e.message);
+    } finally {
+      setLoading(false);
     }
   };
 

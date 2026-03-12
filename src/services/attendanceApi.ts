@@ -1,5 +1,19 @@
 const BASE_URL = 'http://98.70.36.167:801/API/api';
 
+const handleResponse = async (response: Response) => {
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.Message || 'Network request failed');
+  }
+
+  if (data?.Code && data.Code !== '200') {
+    throw new Error(data?.Message || 'API request failed');
+  }
+
+  return data;
+};
+
 export const addAttendanceApi = async (
   token: string,
   userId: number,
@@ -28,18 +42,10 @@ export const addAttendanceApi = async (
     }),
   });
 
-  const data = await response.json();
+  const data = await handleResponse(response);
 
-  if (!response.ok) {
-    throw new Error(data?.Message || 'Attendance request failed');
-  }
-
-  if (data.Code !== '200') {
-    throw new Error(data?.Message || 'Attendance failed');
-  }
-
-  if (data.ResultData?.IsModelError) {
-    throw new Error('Attendance model validation failed');
+  if (data?.ResultData?.IsModelError) {
+    throw new Error('Attendance validation failed');
   }
 
   return data;
@@ -63,7 +69,7 @@ export const checkoutAttendanceApi = async (
       AttendanceDate: new Date().toISOString(),
       AttendanceTypeId: 2,
       CreatedBy: userId,
-      UpdatedBy: '',
+      UpdatedBy: userId,
       IsSuccessful: true,
       IsModelError: false,
       AttendanceMarkedPlace: 'Mobile App',
@@ -73,21 +79,24 @@ export const checkoutAttendanceApi = async (
     }),
   });
 
-  const data = await response.json();
-
-  if (!response.ok || data.Code != '200') {
-    throw new Error(data?.Message || 'Checkout failed');
-  }
-
-  return data;
+  return handleResponse(response);
 };
 
-export const getAttendanceMonthlyForTechnicianApi = async (
+export const getAttendanceTechMonthlyApi = async (
   token: string,
   userId: number
 ) => {
+  const today = new Date();
+
+  const startDate =
+    today.getFullYear() +
+    '-' +
+    (today.getMonth() + 1) +
+    '-' +
+    today.getDate();
+
   const response = await fetch(
-    `${BASE_URL}/Attendance/GetAttendanceMonthlyForTechnician?UserId=${userId}`,
+    `${BASE_URL}/Attendance/GetAttendanceTechMonthly?UserId=${userId}&StartDate=${startDate}`,
     {
       method: 'GET',
       headers: {
@@ -97,13 +106,7 @@ export const getAttendanceMonthlyForTechnicianApi = async (
     }
   );
 
-  const data = await response.json();
-
-  if (!response.ok || data.Code != '200') {
-    throw new Error(data?.Message || 'Failed to fetch attendance');
-  }
-
-  return data;
+  return handleResponse(response);
 };
 
 export const getTodayAttendanceExistsApi = async (
@@ -121,7 +124,7 @@ export const getTodayAttendanceExistsApi = async (
     }
   );
 
-  return response.json();
+  return handleResponse(response);
 };
 
 export const getAttendanceRecordsApi = async (
@@ -140,11 +143,5 @@ export const getAttendanceRecordsApi = async (
     }
   );
 
-  const data = await response.json();
-
-  if (!response.ok || data.Code != 200) {
-    throw new Error(data?.Message || 'Failed to fetch attendance records');
-  }
-
-  return data;
+  return handleResponse(response);
 };

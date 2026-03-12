@@ -14,23 +14,19 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS } from '../../theme/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { getProfileApi } from '../../services/userApi';
 
 const OTP_LENGTH = 4;
+
+const OTP_EXPIRY_SECONDS = 270; // 4.5 minutes
+const RESEND_COOLDOWN = 60;
 
 export default function OtpScreen() {
   const route = useRoute();
   const navigation = useNavigation();
 
-  const {
-    mobile,
-    countryCode,
-    serverOtp,
-    token,
-    userId,
-    role,
-  } = route.params as {
+  const { mobile, serverOtp, token, userId, role } = route.params as {
     mobile: string;
-    countryCode: string;
     serverOtp: number;
     token: string;
     userId: number;
@@ -39,16 +35,61 @@ export default function OtpScreen() {
 
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [focusedIndex, setFocusedIndex] = useState(0);
+
+  const [expiryTimer, setExpiryTimer] = useState(OTP_EXPIRY_SECONDS);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [otpExpired, setOtpExpired] = useState(false);
+
   const inputRefs = useRef<Array<TextInput | null>>(Array(OTP_LENGTH).fill(null));
 
   const isOtpComplete = otp.every((d) => d !== '');
-  const { setAuth } = useAuthStore();
+  const { setAuth, setProfile } = useAuthStore();
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
 
-  const verifyOtp = () => {
+  /*
+  OTP EXPIRY TIMER (4.5 minutes)
+  */
+  useEffect(() => {
+    if (expiryTimer <= 0) {
+      setOtpExpired(true);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setExpiryTimer((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [expiryTimer]);
+
+  /*
+  RESEND TIMER
+  */
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+
+    const timer = setInterval(() => {
+      setResendTimer((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [resendTimer]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const verifyOtp = async () => {
+    if (otpExpired) {
+      Alert.alert('OTP Expired', 'Please resend OTP.');
+      return;
+    }
+
     if (!isOtpComplete) {
       Alert.alert('Error', 'Please enter complete OTP');
       return;
@@ -59,7 +100,44 @@ export default function OtpScreen() {
       return;
     }
 
-    setAuth(String(userId), role, role, mobile, token);
+    setAuth(userId, role, role, mobile, token);
+
+    try {
+      const profile = await getProfileApi(token, userId);
+
+      console.log('PROFILE RESPONSE:', profile);
+
+      const user = profile?.ResultData;
+
+      const fullName = `${user?.FirstName ?? ''} ${user?.LastName ?? ''}`.trim();
+
+      const contact = user?.ContactNo ?? mobile;
+
+      let countryCode = user?.CountryCode;
+
+      if (!countryCode) {
+        if (contact.length === 10) {
+          countryCode = '+91';
+        } else {
+          countryCode = '+1';
+        }
+      }
+
+      setProfile(fullName, contact, countryCode);
+    } catch (err) {
+      console.log('PROFILE FETCH ERROR', err);
+    }
+  };
+
+  const resendOtp = () => {
+    if (resendTimer > 0) return;
+
+    setOtp(Array(OTP_LENGTH).fill(''));
+    setExpiryTimer(OTP_EXPIRY_SECONDS);
+    setOtpExpired(false);
+    setResendTimer(RESEND_COOLDOWN);
+
+    Alert.alert('OTP Sent', 'A new OTP has been sent.');
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -101,7 +179,6 @@ export default function OtpScreen() {
       style={styles.container}
       resizeMode="cover"
     >
-      {/* Logo */}
       <View style={styles.logoContainer}>
         <Image
           source={require('../../../assets/images/logo.png')}
@@ -110,15 +187,12 @@ export default function OtpScreen() {
         />
       </View>
 
-      {/* Title */}
       <Text style={styles.title}>Verify</Text>
 
-      {/* Subtitle */}
       <Text style={styles.subtitle}>
         You will receive a {OTP_LENGTH} digit OTP for verification
       </Text>
 
-      {/* OTP Inputs */}
       <View style={styles.otpRow}>
         {otp.map((digit, index) => (
           <TextInput
@@ -145,25 +219,46 @@ export default function OtpScreen() {
         ))}
       </View>
 
-      {/* Verify Button */}
+      {otpExpired && (
+        <Text style={{ color: 'red', marginBottom: 10 }}>
+          OTP expired. Please resend OTP.
+        </Text>
+      )}
+
+      {!otpExpired && (
+        <Text style={{ color: '#8E8E8E', marginBottom: 10 }}>
+          OTP expires in {formatTime(expiryTimer)}
+        </Text>
+      )}
+
       <TouchableOpacity
         style={[
           styles.verifyButton,
-          { opacity: isOtpComplete ? 1 : 0.6 },
+          { opacity: isOtpComplete && !otpExpired ? 1 : 0.6 },
         ]}
         onPress={verifyOtp}
-        disabled={!isOtpComplete}
+        disabled={!isOtpComplete || otpExpired}
       >
         <Text style={styles.verifyText}>VERIFY</Text>
       </TouchableOpacity>
 
-      {/* Resend */}
       <View style={styles.resendRow}>
-        <Text style={styles.resendText}>Did not get the code?{'\t\t'}</Text>
-        <Text style={styles.resendLink}> Resend</Text>
+        <Text style={styles.resendText}>Did not get the code? </Text>
+
+        <Pressable onPress={resendOtp} disabled={resendTimer > 0}>
+          <Text
+            style={[
+              styles.resendLink,
+              { color: resendTimer > 0 ? 'gray' : COLORS.primary },
+            ]}
+          >
+            {resendTimer > 0
+              ? `Resend in ${formatTime(resendTimer)}`
+              : 'Resend'}
+          </Text>
+        </Pressable>
       </View>
 
-      {/* Back Button */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
@@ -212,7 +307,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '70%',
-    marginBottom: 50,
+    marginBottom: 30,
   },
 
   otpInput: {
@@ -243,7 +338,7 @@ const styles = StyleSheet.create({
   resendRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 40,
+    paddingTop: 20,
   },
 
   resendText: {
@@ -252,7 +347,6 @@ const styles = StyleSheet.create({
   },
 
   resendLink: {
-    color: COLORS.primary,
     fontWeight: '600',
     fontSize: 18,
   },

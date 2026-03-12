@@ -9,26 +9,54 @@ import {
   Modal,
   FlatList,
   ActivityIndicator,
-  RefreshControl,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
-import {
-  getTasksApi,
-  getTaskTagsApi,
-} from '../../services/taskApi';
+import { getTasksApi, getTaskTagsApi, getTaskStatusApi} from '../../services/taskApi';
 import { Task, TaskTag } from '../../types/task.types';
 
 const { height } = Dimensions.get('window');
 
-const STATUS_OPTIONS = [
-  { Id: 1, Name: 'Completed' },
-  { Id: 2, Name: 'Rejected' },
-  { Id: 3, Name: 'Ongoing' },
-  { Id: 4, Name: 'InActive' },
-  { Id: 5, Name: 'OnHold' },
+const createdDate = new Date('2024-06-01'); 
+
+// const STATUS_OPTIONS = [
+//   { Id: 1, Name: 'Completed' },
+//   { Id: 2, Name: 'Rejected' },
+//   { Id: 3, Name: 'Ongoing' },
+//   { Id: 4, Name: 'InActive' },
+//   { Id: 5, Name: 'OnHold' },
+// ];
+
+const months = [
+  'Jan','Feb','Mar','Apr','May','Jun',
+  'Jul','Aug','Sep','Oct','Nov','Dec'
 ];
+
+const years = Array.from({ length: 10 }, (_, i) =>
+  new Date().getFullYear() - 5 + i
+);
+
+  const getMonthYearRange = (start: Date, end: Date) => {
+    const list: {month:number,year:number,label:string}[] = [];
+
+    let current = new Date(start);
+
+    while (current <= end) {
+      list.push({
+        month: current.getMonth(),
+        year: current.getFullYear(),
+        label: current.toLocaleString('en-IN', {
+          month: 'short',
+          year: 'numeric',
+        }),
+      });
+
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    return list;
+  };
 
 export default function TaskScreen() {
   const { uid, token } = useAuthStore();
@@ -37,6 +65,7 @@ export default function TaskScreen() {
   const [tagList, setTagList] = useState<TaskTag[]>([]);
   const [selectedTag, setSelectedTag] = useState<TaskTag | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<any>(null);
+  const [statusList, setStatusList] = useState<any[]>([]);
 
   const [search, setSearch] = useState('');
   const [tagSearch, setTagSearch] = useState('');
@@ -65,6 +94,17 @@ export default function TaskScreen() {
     setTagList(tags);
   };
 
+  const fetchStatuses = async () => {
+    if (!token) return;
+
+    try {
+      const data = await getTaskStatusApi(token);
+      setStatusList(data || []);
+    } catch (e) {
+      console.log('Status fetch error', e);
+    }
+  };
+
   // -------- FETCH TASKS --------
   const fetchTasks = async (page = 1, reset = false) => {
     if (!token || !uid) return;
@@ -79,27 +119,19 @@ export default function TaskScreen() {
         Number(uid),
         search,
         selectedStatus?.Id || 0,
-        selectedTag?.TaskTagId || 0,
         page,
-        10
+        selectedDate.getMonth() + 1,
+        selectedDate.getFullYear()
       );
 
       const newTasks = response?.ResultData || [];
       console.log("Res--------",response)
       setRecordCount(response?.RecordCount || 0);
 
-      const monthFiltered = newTasks.filter(task => {
-        const d = new Date(task.TaskDate);
-        return (
-          d.getMonth() === selectedDate.getMonth() &&
-          d.getFullYear() === selectedDate.getFullYear()
-        );
-      });
-
       setTasks(prev =>
         page === 1
-          ? monthFiltered
-          : [...prev, ...monthFiltered]
+          ? newTasks
+          : [...prev, ...newTasks]
       );
     } catch (err) {
       console.log('Task Fetch Error:', err);
@@ -111,11 +143,8 @@ export default function TaskScreen() {
 
   useEffect(() => {
     fetchTags();
+    fetchStatuses();
   }, []);
-
-  useEffect(() => {
-    fetchTasks(1, true);
-  }, [selectedTag, selectedStatus, search, selectedDate]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -134,6 +163,11 @@ export default function TaskScreen() {
     fetchTasks(nextPage);
   };
 
+  const monthYearOptions = getMonthYearRange(
+    createdDate,
+    new Date()
+  );
+
   // -------- CARD --------
   const renderItem = ({ item }: { item: Task }) => (
     <View style={styles.card}>
@@ -150,10 +184,10 @@ export default function TaskScreen() {
         </Text>
       </View>
 
-      {item.TaskTagName && (
+      {item.Task_TagName && (
         <View style={styles.rightRibbon}>
           <Text style={styles.ribbonText}>
-            {item.TaskTagName.toUpperCase()}
+            {item.Task_TagName.toUpperCase()}
           </Text>
         </View>
       )}
@@ -162,20 +196,17 @@ export default function TaskScreen() {
         {new Date(item.TaskDate).toLocaleString()}
       </Text>
 
-      <Text style={styles.title}>
-        {item.TaskName}{' '}
-        <Text style={styles.taskId}>
-          [{item.TaskId}]
-        </Text>
+      <Text style={styles.address}>
+        {item.FullAddress || item.CustomerName}
       </Text>
 
       <Text style={styles.address}>
         {item.CustomerName}
       </Text>
 
-      {item.FieldworkerName && (
+      {item.FirstNameLastName && (
         <Text style={styles.customer}>
-          {item.FieldworkerName}
+          {item.FirstNameLastName}
         </Text>
       )}
     </View>
@@ -265,12 +296,6 @@ export default function TaskScreen() {
             renderItem={renderItem}
             onEndReached={loadMore}
             onEndReachedThreshold={0.5}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-              />
-            }
           />
         )}
       </View>
@@ -344,17 +369,20 @@ export default function TaskScreen() {
           </Text>
 
           <FlatList
-            data={STATUS_OPTIONS}
+            data={statusList}
             keyExtractor={(item) => item.Id.toString()}
             renderItem={({ item }) => (
               <Pressable
                 style={styles.modalItem}
                 onPress={() => {
-                  setSelectedStatus(item);
+                  setSelectedStatus({
+                    Id: item.TaskStatusId,
+                    Name: item.TaskStatus
+                  });
                   setActiveDropdown(null);
                 }}
               >
-                <Text>{item.Name}</Text>
+                <Text>{item.TaskStatus}</Text>
               </Pressable>
             )}
           />
@@ -367,34 +395,40 @@ export default function TaskScreen() {
         transparent
         animationType="fade"
       >
+
         <Pressable
           style={styles.overlay}
           onPress={() => setShowMonthPicker(false)}
         />
 
         <View style={styles.centerModal}>
+
           <Text style={styles.modalTitle}>
             Select Month
           </Text>
 
           <FlatList
-            data={[...Array(12)].map((_, i) =>
-              new Date(selectedDate.getFullYear(), i, 1)
-            )}
-            keyExtractor={(item) => item.toISOString()}
+            data={monthYearOptions}
+            keyExtractor={(item) =>
+              item.month + '-' + item.year
+            }
             renderItem={({ item }) => (
               <Pressable
                 style={styles.modalItem}
                 onPress={() => {
-                  setSelectedDate(item);
+                  setSelectedDate(
+                    new Date(item.year, item.month, 1)
+                  );
                   setShowMonthPicker(false);
                 }}
               >
-                <Text>{formatMonthYear(item)}</Text>
+                <Text>{item.label}</Text>
               </Pressable>
             )}
           />
+
         </View>
+
       </Modal>
     </View>
   );

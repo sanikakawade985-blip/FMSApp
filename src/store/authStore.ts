@@ -7,7 +7,9 @@ type AuthState = {
   role: string | null;
   name: string | null;
   phone: string | null;
+  countryCode: string | null;
   token: string | null;
+
   setAuth: (
     uid: number,
     role: string,
@@ -15,6 +17,13 @@ type AuthState = {
     phone: string,
     token: string
   ) => void;
+
+  setProfile: (
+    name: string,
+    phone: string,
+    countryCode: string
+  ) => void;
+
   clearAuth: () => void;
 };
 
@@ -25,16 +34,37 @@ export const useAuthStore = create<AuthState>()(
       role: null,
       name: null,
       phone: null,
+      countryCode: null,
       token: null,
 
       setAuth: (uid, role, name, phone, token) =>
-        set({ uid, role, name, phone, token }),
+        set({
+          uid,
+          role,
+          name,
+          phone,
+          token,
+        }),
+
+      setProfile: (name, phone, countryCode) =>
+        set({
+          name,
+          phone,
+          countryCode,
+        }),
 
       clearAuth: () =>
-        set({ uid: null, role: null, name: null, phone: null, token: null }),
+        set({
+          uid: null,
+          role: null,
+          name: null,
+          phone: null,
+          countryCode: null,
+          token: null,
+        }),
     }),
     {
-      name: 'auth-storage', // key in AsyncStorage
+      name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

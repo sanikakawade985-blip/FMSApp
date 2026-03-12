@@ -11,19 +11,16 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
 
   const [ showLogoutModal, setShowLogoutModal ] = useState(false);
   const [ showCheckOutModal, setShowCheckOutModal ] = useState(false);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-  const name = useAuthStore((state) => state.name);
-  const phone = useAuthStore((state) => state.phone);
-
-  const token = useAuthStore((state) => state.token);
-  const userId = useAuthStore((state) => state.uid);
-
+  const {
+    clearAuth, name, phone, countryCode, token, uid: userId
+  } = useAuthStore();
+  
   const handleCheckout = async () => {
     try {
       if (!token || !userId) return;
 
       const latitude = '18.5204';
-      const longitude = '73.8567';
+      const longitude = '73.8567'; 
 
       const res = await checkoutAttendanceApi(
         token,
@@ -70,7 +67,7 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
             <Text style={{ color: COLORS.primary, fontSize: 16 }}>4.5</Text>
           </View>
 
-          <Text style={styles.phone}>{phone ?? ''}</Text>
+          <Text style={styles.phone}>{countryCode ? `${countryCode} ${phone}` : phone}</Text>
         </View>
 
         <Pressable

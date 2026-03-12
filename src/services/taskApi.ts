@@ -13,11 +13,21 @@ export const getTasksApi = async (
   userId: number,
   searchparam = '',
   taskStatusId = 0,
-  taskTagId = 0,
   pageIndex = 1,
-  pageSize = 10
+  taskMonth = new Date().getMonth() + 1,
+  taskYear = new Date().getFullYear()
 ): Promise<TaskListResponse> => {
-  const url = `${BASE_URL}/TaskList/AllTasksListByUserIdOptimised?UserId=${userId}&Searchparam=${searchparam}&TaskStatusID=${taskStatusId}&TaskTagId=${taskTagId}&PageIndex=${pageIndex}&PageSize=${pageSize}`;
+
+  const url =
+    `${BASE_URL}/TaskList/GetTaskListCRM` +
+    `?UserId=${userId}` +
+    `&searchparam=${searchparam}` +
+    `&TaskStatusID=${taskStatusId}` +
+    `&TaskTypeID=0` +
+    `&pageIndex=${pageIndex}` +
+    `&TaskMonth=${taskMonth}` +
+    `&TaskYear=${taskYear}` +
+    `&CustomerDetailsId=0`;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -25,7 +35,10 @@ export const getTasksApi = async (
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data?.Message);
+
+  if (!response.ok || data.Code !== '200') {
+    throw new Error(data?.Message || 'Task fetch failed');
+  }
 
   return data;
 };
