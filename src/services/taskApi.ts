@@ -8,6 +8,9 @@ const headers = (token: string) => ({
   Authorization: `Bearer ${token}`,
 });
 
+/**
+ * Fetch technician task list
+ */
 export const getTasksApi = async (
   token: string,
   userId: number,
@@ -15,18 +18,20 @@ export const getTasksApi = async (
   taskStatusId = 0,
   pageIndex = 1,
   taskMonth = new Date().getMonth() + 1,
-  taskYear = new Date().getFullYear()
+  taskYear = new Date().getFullYear(),
+  taskTag = 1,
 ): Promise<TaskListResponse> => {
 
   const url =
-    `${BASE_URL}/TaskList/GetTaskListCRM` +
+    `${BASE_URL}/Task/CRMGetTaskListSearchByParam` +
     `?UserId=${userId}` +
     `&searchparam=${searchparam}` +
     `&TaskStatusID=${taskStatusId}` +
-    `&TaskTypeID=0` +
+    `&TaskTypeID=1` +
     `&pageIndex=${pageIndex}` +
     `&TaskMonth=${taskMonth}` +
     `&TaskYear=${taskYear}` +
+    `&TaskTagId=${taskTag}` +
     `&CustomerDetailsId=0`;
 
   const response = await fetch(url, {
@@ -43,41 +48,62 @@ export const getTasksApi = async (
   return data;
 };
 
+/**
+ * Fetch Task Tags
+ */
 export const getTaskTagsApi = async (
   token: string,
   userId: number
 ) => {
+
   const response = await fetch(
     `${BASE_URL}/Task/GetTaskTagList?UserId=${userId}`,
     {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
+      headers: headers(token),
     }
   );
 
   const data = await response.json();
 
-  return data?.ResultData?.filter(
-    (tag: any) => tag.IsActive === true
-  ) || [];
-};
+  if (!response.ok || data?.Code !== '200') {
+    throw new Error(data?.Message || 'Task tag fetch failed');
+  }
 
-export const getTaskStatusApi = async (token: string) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/GetTaskStatusList`,
-    { headers: headers(token) }
-  );
-  const data = await response.json();
   return data?.ResultData || [];
 };
 
+/**
+ * Fetch Task Status List
+ */
+export const getTaskStatusApi = async (token: string) => {
+
+  const response = await fetch(
+    `${BASE_URL}/Task/GetTaskStatusList`,
+    {
+      method: 'GET',
+      headers: headers(token),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || data?.Code !== '200') {
+    throw new Error(data?.Message || 'Task status fetch failed');
+  }
+
+  return data?.ResultData || [];
+};
+
+/**
+ * Update Task Status
+ * Used for Start / End / Reject actions
+ */
 export const updateTaskStatusApi = async (
   token: string,
   payload: any
 ) => {
+
   const response = await fetch(
     `${BASE_URL}/Task/UpdateTaskStatus`,
     {
@@ -88,7 +114,10 @@ export const updateTaskStatusApi = async (
   );
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data?.Message);
+
+  if (!response.ok || data?.Code !== '200') {
+    throw new Error(data?.Message || 'Task status update failed');
+  }
 
   return data;
 };

@@ -53,7 +53,7 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
 
           <Pressable
             style={styles.editProfile}
-            onPress={() => console.log('Edit Profile')}
+            onPress={() => navigation.navigate('MainTabs', { screen: 'Profile' })}
           >
             <Ionicons name="create-outline" size={16} color="#fff" />
           </Pressable>

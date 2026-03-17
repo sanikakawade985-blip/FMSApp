@@ -1,7 +1,36 @@
 const BASE_URL = "http://98.70.36.167:801/API/api";
 
 /**
- * Technician Login – Request OTP
+ * Step 1 — Check if technician mobile exists
+ */
+export const checkMobileExistsApi = async (mobile: string, token?: string) => {
+
+  const url = `${BASE_URL}/Users/IsMobileNoExist?MobileNo=${mobile}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      ...(token ? { Authorization: token } : {}),
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error("Network error while checking mobile number");
+  }
+
+  if (data?.Code !== "200") {
+    throw new Error(data?.Message || "Mobile number not registered");
+  }
+
+  return data;
+};
+
+
+/**
+ * Step 2 — Technician Login (Send OTP / Authenticate)
  */
 export const sendOtpApi = async (mobile: string) => {
 
@@ -26,7 +55,7 @@ export const sendOtpApi = async (mobile: string) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error("Network error while requesting OTP");
+    throw new Error("Network error during login");
   }
 
   if (data?.Code !== "200") {

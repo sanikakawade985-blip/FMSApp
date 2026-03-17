@@ -15,7 +15,7 @@ import AppButton from '../../components/AppButton';
 import { COLORS } from '../../theme/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GlobalStyles } from '../../styles/globalStyles';
-import { sendOtpApi } from '../../services/authApi';
+import { sendOtpApi, checkMobileExistsApi } from '../../services/authApi';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import * as Geolocation from 'react-native-geolocation-service';
 
@@ -42,6 +42,8 @@ export default function LoginScreen() {
   }, [mobile]);
 
   const login = async () => {
+    const cleanedMobile = mobile.replace(/\D/g, "");
+
     if (!isValidMobile) {
       Alert.alert("Error", "Please enter valid mobile number");
       return;
@@ -50,20 +52,24 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      const res = await sendOtpApi(mobile);
+      //Step 1 - check mobile exists
+      await checkMobileExistsApi(cleanedMobile);
+
+      // Step 2 — Send login request
+      const res = await sendOtpApi(cleanedMobile);
 
       const result = res?.ResultData;
 
       navigation.navigate("Otp", {
-        mobile,
-        serverOtp: result?.OTP,
-        token: result?.Token,
-        userId: result?.UserID,
-        role: result?.UserGroupName,
+        mobile: cleanedMobile,
+        serverOtp: result?.OTP ?? 0,
+        token: result?.Token ?? "",
+        userId: result?.UserID ?? 0,
+        role: result?.UserGroupName ?? "technician",
       });
 
     } catch (e: any) {
-      Alert.alert("Login Failed", e.message);
+      Alert.alert("Login Failed", e?.message || "Login failed");
     } finally {
       setLoading(false);
     }

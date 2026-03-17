@@ -14,6 +14,9 @@ const handleResponse = async (response: Response) => {
   return data;
 };
 
+/**
+ * Technician Check-In
+ */
 export const addAttendanceApi = async (
   token: string,
   userId: number,
@@ -24,7 +27,7 @@ export const addAttendanceApi = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: token,
     },
     body: JSON.stringify({
       Id: 0,
@@ -32,7 +35,7 @@ export const addAttendanceApi = async (
       AttendanceDate: new Date().toISOString(),
       AttendanceTypeId: 1,
       CreatedBy: userId,
-      UpdatedBy: userId,
+      UpdatedBy: String(userId),
       IsSuccessful: true,
       IsModelError: false,
       AttendanceMarkedPlace: 'Mobile App',
@@ -42,15 +45,12 @@ export const addAttendanceApi = async (
     }),
   });
 
-  const data = await handleResponse(response);
-
-  if (data?.ResultData?.IsModelError) {
-    throw new Error('Attendance validation failed');
-  }
-
-  return data;
+  return handleResponse(response);
 };
 
+/**
+ * Technician Check-Out
+ */
 export const checkoutAttendanceApi = async (
   token: string,
   userId: number,
@@ -61,7 +61,7 @@ export const checkoutAttendanceApi = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: token,
     },
     body: JSON.stringify({
       Id: 0,
@@ -69,7 +69,7 @@ export const checkoutAttendanceApi = async (
       AttendanceDate: new Date().toISOString(),
       AttendanceTypeId: 2,
       CreatedBy: userId,
-      UpdatedBy: userId,
+      UpdatedBy: String(userId),
       IsSuccessful: true,
       IsModelError: false,
       AttendanceMarkedPlace: 'Mobile App',
@@ -82,33 +82,9 @@ export const checkoutAttendanceApi = async (
   return handleResponse(response);
 };
 
-export const getAttendanceTechMonthlyApi = async (
-  token: string,
-  userId: number
-) => {
-  const today = new Date();
-
-  const startDate =
-    today.getFullYear() +
-    '-' +
-    (today.getMonth() + 1) +
-    '-' +
-    today.getDate();
-
-  const response = await fetch(
-    `${BASE_URL}/Attendance/GetAttendanceTechMonthly?UserId=${userId}&StartDate=${startDate}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  return handleResponse(response);
-};
-
+/**
+ * Check if today's attendance exists
+ */
 export const getTodayAttendanceExistsApi = async (
   token: string,
   userId: number
@@ -118,8 +94,8 @@ export const getTodayAttendanceExistsApi = async (
     {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: token,
+        Accept: 'application/json',
       },
     }
   );
@@ -127,6 +103,32 @@ export const getTodayAttendanceExistsApi = async (
   return handleResponse(response);
 };
 
+/**
+ * Monthly attendance for technician
+ */
+export const getAttendanceMonthlyApi = async (
+  token: string,
+  userId: number
+) => {
+  const today = new Date().toISOString().split('T')[0];
+
+  const response = await fetch(
+    `${BASE_URL}/Attendance/GetAttendanceMonthlyForTechnicians?UserId=${userId}&Dates=${today}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: token,
+        Accept: 'application/json',
+      },
+    }
+  );
+
+  return handleResponse(response);
+};
+
+/**
+ * Attendance history records
+ */
 export const getAttendanceRecordsApi = async (
   token: string,
   userId: number,
@@ -137,8 +139,8 @@ export const getAttendanceRecordsApi = async (
     {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: token,
+        Accept: 'application/json',
       },
     }
   );

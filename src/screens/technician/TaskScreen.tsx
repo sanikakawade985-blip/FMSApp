@@ -9,66 +9,65 @@ import {
   Modal,
   FlatList,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
-import { getTasksApi, getTaskTagsApi, getTaskStatusApi} from '../../services/taskApi';
+import { getTasksApi, getTaskTagsApi, getTaskStatusApi } from '../../services/taskApi';
 import { Task, TaskTag } from '../../types/task.types';
 
 const { height } = Dimensions.get('window');
 
-const createdDate = new Date('2024-06-01'); 
+const createdDate = new Date('2024-06-01');
 
-// const STATUS_OPTIONS = [
-//   { Id: 1, Name: 'Completed' },
-//   { Id: 2, Name: 'Rejected' },
-//   { Id: 3, Name: 'Ongoing' },
-//   { Id: 4, Name: 'InActive' },
-//   { Id: 5, Name: 'OnHold' },
-// ];
+const getMonthYearRange = (start: Date, end: Date) => {
+  const list: { month: number; year: number; label: string }[] = [];
+  let current = new Date(start);
 
-const months = [
-  'Jan','Feb','Mar','Apr','May','Jun',
-  'Jul','Aug','Sep','Oct','Nov','Dec'
-];
+  while (current <= end) {
+    list.push({
+      month: current.getMonth(),
+      year: current.getFullYear(),
+      label: current.toLocaleString('en-IN', { month: 'short', year: 'numeric' }),
+    });
 
-const years = Array.from({ length: 10 }, (_, i) =>
-  new Date().getFullYear() - 5 + i
-);
+    current.setMonth(current.getMonth() + 1);
+  }
 
-  const getMonthYearRange = (start: Date, end: Date) => {
-    const list: {month:number,year:number,label:string}[] = [];
+  return list;
+};
 
-    let current = new Date(start);
+const getStatusStyle = (statusId: number) => {
+  switch (statusId) {
+    case 3:
+      return styles.ribbonOngoing;
+    case 1:
+      return styles.ribbonCompleted;
+    case 4:
+      return styles.ribbonInactive;
+    case 5:
+      return styles.ribbonOnHold;
+    case 2:
+      return styles.ribbonRejected;
+    default:
+      return styles.ribbonInactive;
+  }
+};
 
-    while (current <= end) {
-      list.push({
-        month: current.getMonth(),
-        year: current.getFullYear(),
-        label: current.toLocaleString('en-IN', {
-          month: 'short',
-          year: 'numeric',
-        }),
-      });
-
-      current.setMonth(current.getMonth() + 1);
-    }
-
-    return list;
-  };
-
-export default function TaskScreen() {
+export default function TaskScreen({ navigation }: any) {
   const { uid, token } = useAuthStore();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tagList, setTagList] = useState<TaskTag[]>([]);
+  const [statusList, setStatusList] = useState<any[]>([]);
+
   const [selectedTag, setSelectedTag] = useState<TaskTag | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<any>(null);
-  const [statusList, setStatusList] = useState<any[]>([]);
 
   const [search, setSearch] = useState('');
   const [tagSearch, setTagSearch] = useState('');
+
   const [pageIndex, setPageIndex] = useState(1);
   const [recordCount, setRecordCount] = useState(0);
 
@@ -81,13 +80,11 @@ export default function TaskScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
-  const formatMonthYear = (date: Date) =>
-    date.toLocaleString('en-IN', {
-      month: 'short',
-      year: 'numeric',
-    });
+  const monthYearOptions = getMonthYearRange(createdDate, new Date());
 
-  // -------- FETCH TAGS --------
+  const formatMonthYear = (date: Date) =>
+    date.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
+
   const fetchTags = async () => {
     if (!token || !uid) return;
     const tags = await getTaskTagsApi(token, Number(uid));
@@ -96,24 +93,18 @@ export default function TaskScreen() {
 
   const fetchStatuses = async () => {
     if (!token) return;
-
-    try {
-      const data = await getTaskStatusApi(token);
-      setStatusList(data || []);
-    } catch (e) {
-      console.log('Status fetch error', e);
-    }
+    const data = await getTaskStatusApi(token);
+    setStatusList(data || []);
   };
 
-  // -------- FETCH TASKS --------
   const fetchTasks = async (page = 1, reset = false) => {
     if (!token || !uid) return;
 
     if (reset) setTasks([]);
 
-    setLoading(true);
-
     try {
+      setLoading(true);
+
       const response = await getTasksApi(
         token,
         Number(uid),
@@ -121,20 +112,18 @@ export default function TaskScreen() {
         selectedStatus?.Id || 0,
         page,
         selectedDate.getMonth() + 1,
-        selectedDate.getFullYear()
+        selectedDate.getFullYear(),
+        selectedTag?.TaskTagId || 0
       );
 
       const newTasks = response?.ResultData || [];
-      console.log("Res--------",response)
       setRecordCount(response?.RecordCount || 0);
 
       setTasks(prev =>
-        page === 1
-          ? newTasks
-          : [...prev, ...newTasks]
+        page === 1 ? newTasks : [...prev, ...newTasks]
       );
     } catch (err) {
-      console.log('Task Fetch Error:', err);
+      console.log('Task fetch error', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -145,6 +134,16 @@ export default function TaskScreen() {
     fetchTags();
     fetchStatuses();
   }, []);
+
+  useEffect(() => {
+    setPageIndex(1);
+    fetchTasks(1, true);
+  }, [selectedStatus, selectedTag, search, selectedDate]);
+
+  useEffect(() => {
+    console.log("STATUS LIST", statusList)
+    console.log("TAG LIST", tagList)
+  }, [statusList, tagList]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -158,84 +157,78 @@ export default function TaskScreen() {
 
   const loadMore = () => {
     if (tasks.length >= recordCount) return;
+
     const nextPage = pageIndex + 1;
     setPageIndex(nextPage);
     fetchTasks(nextPage);
   };
 
-  const monthYearOptions = getMonthYearRange(
-    createdDate,
-    new Date()
-  );
+  const openTask = (task: Task) => {
+    switch (task.TaskState) {
+      case 0:
+      case 1:
+        navigation.navigate('TaskTracking', { task });
+        break;
 
-  // -------- CARD --------
+      case 2:
+        navigation.navigate('PaymentReceived', { task });
+        break;
+
+      case 3:
+        navigation.navigate('TaskClosure', { task });
+        break;
+
+      case 4:
+        Alert.alert('Task already completed');
+        break;
+    }
+  };
+
   const renderItem = ({ item }: { item: Task }) => (
-    <View style={styles.card}>
-      <View
-        style={[
-          styles.leftRibbon,
-          item.TaskStatus === 'Ongoing'
-            ? styles.ribbonOngoing
-            : styles.ribbonInactive,
-        ]}
-      >
-        <Text style={styles.ribbonText}>
-          {item.TaskStatus?.toUpperCase()}
-        </Text>
+    <Pressable style={styles.card} onPress={() => openTask(item)}>
+      <View style={[styles.leftRibbon, getStatusStyle(item?.TaskStatusId ?? 4)]}>
+        <Text style={styles.ribbonText}>{item?.TaskStatus ? item.TaskStatus.toUpperCase() : ''}</Text>
       </View>
 
       {item.Task_TagName && (
         <View style={styles.rightRibbon}>
-          <Text style={styles.ribbonText}>
-            {item.Task_TagName.toUpperCase()}
-          </Text>
+          <Text style={styles.ribbonText}>{item.Task_TagName.toUpperCase()}</Text>
         </View>
       )}
 
       <Text style={styles.dateText}>
-        {new Date(item.TaskDate).toLocaleString()}
+        {item?.TaskDate
+          ? new Date(item.TaskDate).toLocaleString()
+          : ''}
       </Text>
 
-      <Text style={styles.address}>
-        {item.FullAddress || item.CustomerName}
-      </Text>
-
-      <Text style={styles.address}>
-        {item.CustomerName}
-      </Text>
+      <Text style={styles.address}>{item.FullAddress || item.CustomerName}</Text>
+      <Text style={styles.address}>{item.CustomerName}</Text>
 
       {item.FirstNameLastName && (
-        <Text style={styles.customer}>
-          {item.FirstNameLastName}
-        </Text>
+        <Text style={styles.customer}>{item.FirstNameLastName}</Text>
       )}
-    </View>
+    </Pressable>
   );
 
   return (
     <View style={styles.root}>
       <View style={styles.redBg} />
 
-      {/* MONTH SELECTOR */}
       <View style={styles.monthRow}>
         <Pressable
           style={styles.monthWrapper}
           onPress={() => setShowMonthPicker(true)}
         >
-          <Text style={styles.monthText}>
-            {formatMonthYear(selectedDate)}
-          </Text>
+          <Text style={styles.monthText}>{formatMonthYear(selectedDate)}</Text>
           <Ionicons name="chevron-down" size={18} color="#fff" />
         </Pressable>
       </View>
 
       <View style={styles.whiteSheet}>
 
-        {/* SEARCH */}
         <View style={styles.searchContainer}>
-          {!search && (
-            <Ionicons name="search" size={20} color="#9CA3AF" />
-          )}
+          {!search && <Ionicons name="search" size={20} color="#9CA3AF" />}
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -251,8 +244,8 @@ export default function TaskScreen() {
           )}
         </View>
 
-        {/* FILTERS */}
         <View style={styles.filterRow}>
+
           <Pressable
             style={styles.filterItem}
             onPress={() => setActiveDropdown('TAG')}
@@ -273,18 +266,13 @@ export default function TaskScreen() {
             <Ionicons name="chevron-down" size={16} color={COLORS.primary} />
           </Pressable>
 
-          <Pressable
-            style={styles.refreshItem}
-            onPress={handleRefresh}
-          >
-            <Text style={styles.refreshText}>
-              Refresh List
-            </Text>
+          <Pressable style={styles.refreshItem} onPress={handleRefresh}>
+            <Text style={styles.refreshText}>Refresh List</Text>
             <Ionicons name="refresh" size={16} color={COLORS.primary} />
           </Pressable>
+
         </View>
 
-        {/* LIST */}
         {loading && pageIndex === 1 ? (
           <ActivityIndicator size="large" />
         ) : (
@@ -296,25 +284,17 @@ export default function TaskScreen() {
             renderItem={renderItem}
             onEndReached={loadMore}
             onEndReachedThreshold={0.5}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
           />
         )}
       </View>
 
-      {/* TAG MODAL */}
-      <Modal
-        visible={activeDropdown === 'TAG'}
-        transparent
-        animationType="fade"
-      >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => setActiveDropdown(null)}
-        />
+      <Modal visible={activeDropdown === 'TAG'} transparent animationType="fade">
+        <Pressable style={styles.overlay} onPress={() => setActiveDropdown(null)} />
 
         <View style={styles.centerModal}>
-          <Text style={styles.modalTitle}>
-            Select Task Tag
-          </Text>
+          <Text style={styles.modalTitle}>Select Task Tag</Text>
 
           <View style={styles.modalSearchBox}>
             <TextInput
@@ -329,12 +309,12 @@ export default function TaskScreen() {
 
           <FlatList
             data={tagList.filter(tag =>
-              tag.TaskTagName
-                .toLowerCase()
-                .includes(tagSearch.toLowerCase())
+              tag.TaskTagName.toLowerCase().includes(tagSearch.toLowerCase())
             )}
-            keyExtractor={(item) =>
-              item.TaskTagId.toString()
+            keyExtractor={(item, index) =>
+              item?.TaskTagId
+                ? item.TaskTagId.toString()
+                : index.toString()
             }
             renderItem={({ item }) => (
               <Pressable
@@ -352,73 +332,49 @@ export default function TaskScreen() {
         </View>
       </Modal>
 
-      {/* STATUS MODAL */}
-      <Modal
-        visible={activeDropdown === 'STATUS'}
-        transparent
-        animationType="fade"
-      >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => setActiveDropdown(null)}
-        />
+      <Modal visible={activeDropdown === 'STATUS'} transparent animationType="fade">
+        <Pressable style={styles.overlay} onPress={() => setActiveDropdown(null)} />
 
         <View style={styles.centerModal}>
-          <Text style={styles.modalTitle}>
-            Select Status
-          </Text>
+          <Text style={styles.modalTitle}>Select Status</Text>
 
           <FlatList
             data={statusList}
-            keyExtractor={(item) => item.Id.toString()}
+            keyExtractor={(item, index) =>
+              item?.Id ? item.Id.toString() : index.toString()
+            }
             renderItem={({ item }) => (
               <Pressable
                 style={styles.modalItem}
                 onPress={() => {
                   setSelectedStatus({
-                    Id: item.TaskStatusId,
-                    Name: item.TaskStatus
+                    Id: item.Id,
+                    Name: item.Name,
                   });
                   setActiveDropdown(null);
                 }}
               >
-                <Text>{item.TaskStatus}</Text>
+                <Text>{item.Name}</Text>
               </Pressable>
             )}
           />
         </View>
       </Modal>
 
-      {/* MONTH MODAL */}
-      <Modal
-        visible={showMonthPicker}
-        transparent
-        animationType="fade"
-      >
-
-        <Pressable
-          style={styles.overlay}
-          onPress={() => setShowMonthPicker(false)}
-        />
+      <Modal visible={showMonthPicker} transparent animationType="fade">
+        <Pressable style={styles.overlay} onPress={() => setShowMonthPicker(false)} />
 
         <View style={styles.centerModal}>
-
-          <Text style={styles.modalTitle}>
-            Select Month
-          </Text>
+          <Text style={styles.modalTitle}>Select Month</Text>
 
           <FlatList
             data={monthYearOptions}
-            keyExtractor={(item) =>
-              item.month + '-' + item.year
-            }
+            keyExtractor={(item) => item.month + '-' + item.year}
             renderItem={({ item }) => (
               <Pressable
                 style={styles.modalItem}
                 onPress={() => {
-                  setSelectedDate(
-                    new Date(item.year, item.month, 1)
-                  );
+                  setSelectedDate(new Date(item.year, item.month, 1));
                   setShowMonthPicker(false);
                 }}
               >
@@ -426,9 +382,7 @@ export default function TaskScreen() {
               </Pressable>
             )}
           />
-
         </View>
-
       </Modal>
     </View>
   );
@@ -436,11 +390,7 @@ export default function TaskScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.primary },
-
-  redBg: {
-    height: height * 0.1,
-    backgroundColor: COLORS.primary,
-  },
+  redBg: { height: height * 0.1, backgroundColor: COLORS.primary },
 
   whiteSheet: {
     flex: 1,
@@ -450,240 +400,121 @@ const styles = StyleSheet.create({
     padding: 16,
   },
 
-  dropdown: {
-    position: 'absolute',
-    top: 220,
-    left: 40,
-    width: 250,
+  card: {
     backgroundColor: '#fff',
-    elevation: 6,
-    borderRadius: 10,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 18,
+    elevation: 4,
   },
 
-  dropdownItem: {
-    padding: 12,
-  },
-
-  statusTag: {
+  leftRibbon: {
     position: 'absolute',
     top: 0,
     left: 0,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 6,
-    borderTopLeftRadius: 16,
-    borderBottomRightRadius: 14,
+    borderTopLeftRadius: 18,
+    borderBottomRightRadius: 18,
   },
 
-  ongoing: { backgroundColor: '#F59E0B' },
-  completed: { backgroundColor: '#16A34A' },
-  inactive: { backgroundColor: '#9CA3AF' },
+  rightRibbon: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 18,
+    backgroundColor: '#2563EB',
+  },
 
-  statusText: {
-    color: '#fff',
+  ribbonOngoing: { backgroundColor: '#F59E0B' },
+  ribbonCompleted: { backgroundColor: '#16A34A' },
+  ribbonInactive: { backgroundColor: '#9CA3AF' },
+  ribbonOnHold: { backgroundColor: '#6366F1' },
+  ribbonRejected: { backgroundColor: '#DC2626' },
+
+  ribbonText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+
+  dateText: {
+    position: 'absolute',
+    right: 18,
+    top: 48,
     fontSize: 12,
-    fontWeight: '600',
-  },
-
-  tagText: {
-    marginTop: 4,
-    fontSize: 13,
     color: '#6B7280',
   },
 
-  card: {
-  backgroundColor: '#fff',
-  borderRadius: 18,
-  padding: 18,
-  marginBottom: 18,
-  elevation: 4,
-},
+  address: { marginTop: 8, fontSize: 15, color: '#6B7280' },
+  customer: { marginTop: 6, fontSize: 15, color: '#374151' },
 
-leftRibbon: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  paddingHorizontal: 16,
-  paddingVertical: 6,
-  borderTopLeftRadius: 18,
-  borderBottomRightRadius: 18,
-},
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    height: 45,
+    borderBottomWidth: 1,
+    borderColor: '#222222',
+    marginBottom: 15,
+  },
 
-rightRibbon: {
-  position: 'absolute',
-  top: 0,
-  right: 0,
-  paddingHorizontal: 16,
-  paddingVertical: 6,
-  borderTopRightRadius: 18,
-  borderBottomLeftRadius: 18,
-  backgroundColor: '#2563EB',
-},
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 18,
+    color: '#222222',
+  },
 
-ribbonOngoing: {
-  backgroundColor: '#F59E0B',
-},
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
 
-ribbonInactive: {
-  backgroundColor: '#9CA3AF',
-},
+  filterItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
-ribbonText: {
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: '600',
-},
+  filterText: { fontSize: 15, color: '#111827' },
 
-rightRibbonText: {
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: '600',
-},
+  refreshItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
-dateText: {
-  position: 'absolute',
-  right: 18,
-  top: 48,
-  fontSize: 12,
-  color: '#6B7280',
-},
+  refreshText: { fontSize: 15, color: COLORS.primary, fontWeight: '600' },
 
-title: {
-  fontSize: 20,
-  fontWeight: '700',
-  marginTop: 22,
-},
+  monthRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+  },
 
-taskId: {
-  color: '#2563EB',
-  fontWeight: '600',
-},
+  monthWrapper: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
-address: {
-  marginTop: 8,
-  fontSize: 15,
-  color: '#6B7280',
-},
+  monthText: { color: '#fff', fontSize: 18, fontWeight: '500' },
 
-customer: {
-  marginTop: 6,
-  fontSize: 15,
-  color: '#374151',
-},
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
 
-searchContainer: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#fff',
-  paddingHorizontal: 14,
-  height: 45,
-  borderBottomWidth: 1,
-  borderColor: '#222222',
-  marginBottom: 15,
-},
+  centerModal: {
+    position: 'absolute',
+    top: '25%',
+    left: '8%',
+    right: '8%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    maxHeight: 450,
+  },
 
-searchInput: {
-  flex: 1,
-  marginLeft: 8,
-  fontSize: 18,
-  color: '#222222',
-},
+  modalTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
 
-filterRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 18,
-},
+  modalSearchBox: {
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 12,
+  },
 
-filterItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 5,
-},
+  modalSearchInput: { height: 40 },
 
-filterText: {
-  fontSize: 15,
-  color: '#111827',
-},
-
-refreshItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 5,
-},
-
-refreshText: {
-  fontSize: 15,
-  color: COLORS.primary,
-  fontWeight: '600',
-},
-
-monthRow: {
-  flexDirection: 'row',
-  justifyContent: 'flex-end',
-  paddingHorizontal: 20,
-  paddingVertical: 6,
-},
-
-monthWrapper: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-},
-
-monthText: {
-  color: '#fff',
-  fontSize: 18,
-  fontWeight: '500',
-},
-
-monthDropdown: {
-  position: 'absolute',
-  top: 110,
-  right: 20,
-  width: 160,
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  elevation: 6,
-  paddingVertical: 6,
-  zIndex: 100,
-},
-
-overlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.4)',
-},
-
-centerModal: {
-  position: 'absolute',
-  top: '25%',
-  left: '8%',
-  right: '8%',
-  backgroundColor: '#fff',
-  borderRadius: 16,
-  padding: 16,
-  maxHeight: 450,
-},
-
-modalTitle: {
-  fontSize: 18,
-  fontWeight: '600',
-  marginBottom: 12,
-},
-
-modalSearchBox: {
-  borderWidth: 1,
-  borderColor: COLORS.primary,
-  borderRadius: 8,
-  paddingHorizontal: 10,
-  marginBottom: 12,
-},
-
-modalSearchInput: {
-  height: 40,
-},
-
-modalItem: {
-  paddingVertical: 12,
-},
+  modalItem: { paddingVertical: 12 },
 });

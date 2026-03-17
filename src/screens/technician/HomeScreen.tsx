@@ -17,6 +17,7 @@ import {
   addAttendanceApi,
   getTodayAttendanceExistsApi,
 } from '../../services/attendanceApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function HomeScreen() {
   const [filter, setFilter] = useState<'Today' | 'Week' | 'Month' | 'Year'>(
@@ -25,6 +26,7 @@ export default function HomeScreen() {
 
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [attendanceChecked, setAttendanceChecked] = useState(false);
 
   const token = useAuthStore((state) => state.token);
   const userId = useAuthStore((state) => state.uid);
@@ -34,27 +36,38 @@ export default function HomeScreen() {
 
   useDoubleBackExit();
 
+  const todayKey = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return `checked_in_${today}`;
+  };
+
   useEffect(() => {
-    checkAttendance();
+    if (!attendanceChecked && token && userId) {
+      checkAttendance();
+      setAttendanceChecked(true);
+    }
   }, [token, userId]);
 
   const checkAttendance = async () => {
-    if (!token || !userId) return;
-
     try {
-      const res = await getTodayAttendanceExistsApi(token, Number(userId));
+      if (!token || !userId) return;
 
-      const message = (res?.Message || '').toLowerCase();
+      const localCheck = await AsyncStorage.getItem(todayKey());
 
-      const attendanceExists =
-        message.includes('exist') || message.includes('already');
-
-      if (!attendanceExists) {
-        setShowCheckInModal(true);
+      if (localCheck === 'true') {
+        return; // already checked in today locally
       }
 
-    } catch (err) {
-      console.log('Attendance check failed', err);
+      const res = await getTodayAttendanceExistsApi(token, Number(userId));
+
+      if (!res?.ResultData) {
+        setShowCheckInModal(true);
+      } else {
+        await AsyncStorage.setItem(todayKey(), 'true');
+      }
+
+    } catch {
+      setShowCheckInModal(true);
     }
   };
 
@@ -66,6 +79,8 @@ export default function HomeScreen() {
       const longitude = '73.8567';
 
       await addAttendanceApi(token, Number(userId), latitude, longitude);
+
+      await AsyncStorage.setItem(todayKey(), 'true');
 
       setShowCheckInModal(false);
 
