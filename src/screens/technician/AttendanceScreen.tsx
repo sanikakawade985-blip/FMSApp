@@ -5,7 +5,6 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
-
 import { useState, useCallback } from 'react';
 import { COLORS } from '../../theme/colors';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -23,7 +22,6 @@ type NavigationProp = BottomTabNavigationProp<
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export default function AttendanceScreen() {
-
   const navigation = useNavigation<NavigationProp>();
 
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
@@ -42,7 +40,12 @@ export default function AttendanceScreen() {
     try {
       if (!token || !userId) return;
 
-      const res = await getAttendanceMonthlyApi(token, Number(userId));
+      const today = new Date();
+      const currentDate = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+
+      const res = await getAttendanceMonthlyApi(
+        token, Number(userId), currentDate
+      );
 
       if (Array.isArray(res?.ResultData)) {
         setAttendanceData(res.ResultData);
@@ -65,19 +68,18 @@ export default function AttendanceScreen() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const attendanceMap = attendanceData.reduce((acc: any, item: any) => {
+  const getDotColor = (attendance: any) => {
+    if (!attendance) return null;
 
-    if (!item?.Date) return acc;
+    if (attendance.Attendance === 'Present') return '#22c55e';
+    if (attendance.Attendance === 'Absent') return '#f87171';
+    if (attendance.Attendance === 'Idle') return '#f59e0b';
+    if (attendance.Attendance === 'OnLeave') return '#000';
 
-    const date = item.Date.split('T')[0];
-    acc[date] = item;
-
-    return acc;
-
-  }, {});
+    return null;
+  };
 
   const renderCalendar = () => {
-
     const cells = [];
 
     for (let i = 0; i < firstDay; i++) {
@@ -85,20 +87,16 @@ export default function AttendanceScreen() {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-
       const selected = selectedDate === day;
 
       const dateStr =
         `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-      const attendance = attendanceMap[dateStr];
+      const attendance = attendanceData.find((a) =>
+        a?.Date?.includes(dateStr)
+      );
 
-      let dotColor;
-
-      if (attendance?.AttendanceTypeId === 2) dotColor = '#22c55e'; // Present
-      if (attendance?.AttendanceTypeId === 3) dotColor = '#f87171'; // Absent
-      if (attendance?.AttendanceTypeId === 5) dotColor = '#f59e0b'; // Idle
-      if (attendance?.AttendanceTypeId === 6) dotColor = '#000'; // Leave
+      const dotColor = getDotColor(attendance);
 
       const isFuture = new Date(year, month, day) > today;
 
@@ -108,7 +106,6 @@ export default function AttendanceScreen() {
           style={[styles.dayCell, selected && styles.selectedDay]}
           onPress={() => setSelectedDate(day)}
         >
-
           <Text
             style={[
               styles.dayText,
@@ -122,40 +119,47 @@ export default function AttendanceScreen() {
           {dotColor && (
             <View style={[styles.dot, { backgroundColor: dotColor }]} />
           )}
-
         </Pressable>
       );
     }
-
     return cells;
   };
 
   const selectedAttendance = attendanceData.find((a) => {
-
     if (!a?.Date) return false;
-
-    const date = a.Date.split('T')[0];
 
     const selected =
       `${year}-${String(month + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
 
-    return date === selected;
-
+    return a.Date.includes(selected);
   });
 
-  const present = attendanceData.filter(a => a.AttendanceTypeId === 2).length;
-  const absent = attendanceData.filter(a => a.AttendanceTypeId === 3).length;
-  const idle = attendanceData.filter(a => a.AttendanceTypeId === 5).length;
-  const leave = attendanceData.filter(a => a.AttendanceTypeId === 6).length;
+  const present = attendanceData.filter(
+    (a) => a.Attendance === 'Present'
+  ).length;
+
+  const absent = attendanceData.filter(
+    (a) => a.Attendance === 'Absent'
+  ).length;
+
+  const idle = attendanceData.filter(
+    (a) => a.Attendance === 'Idle'
+  ).length;
+
+  const leave = attendanceData.filter(
+    (a) => a.Attendance === 'OnLeave'
+  ).length;
+
+  // ✅ Time formatting (exact Java)
+  const formatTime = (dateStr?: string) => {
+    if (!dateStr) return '-NA-';
+    return dateStr.split('T')[1]?.split('.')[0] || '-NA-';
+  };
 
   return (
-
     <View style={styles.root}>
-
       <ScrollView showsVerticalScrollIndicator={false}>
-
         <View style={styles.tabRow}>
-
           <Pressable style={styles.activeTab}>
             <Text style={styles.activeTabText}>ATTENDANCE</Text>
           </Pressable>
@@ -166,7 +170,6 @@ export default function AttendanceScreen() {
           >
             <Text style={styles.inactiveTabText}>LEAVES</Text>
           </Pressable>
-
         </View>
 
         <Text style={styles.monthText}>
@@ -185,7 +188,6 @@ export default function AttendanceScreen() {
         <View style={styles.calendarGrid}>{renderCalendar()}</View>
 
         <View style={styles.summaryRow}>
-
           <View style={[styles.summaryCard, { backgroundColor: '#f87171' }]}>
             <Text style={styles.summaryText}>Total Absent</Text>
             <Text style={styles.summaryValue}>{absent}</Text>
@@ -205,13 +207,10 @@ export default function AttendanceScreen() {
             <Text style={styles.summaryText}>Total Leave</Text>
             <Text style={styles.summaryValue}>{leave}</Text>
           </View>
-
         </View>
 
         <View style={styles.checkCard}>
-
           <View style={styles.line}>
-
             <Text style={styles.dateText}>
               {selectedFullDate.toLocaleDateString(undefined, {
                 weekday: 'long',
@@ -221,15 +220,11 @@ export default function AttendanceScreen() {
             <Text style={styles.label}>CheckIn :</Text>
 
             <Text style={styles.time}>
-              {selectedAttendance?.CheckIn
-                ? new Date(selectedAttendance.CheckIn).toLocaleTimeString('en-JP')
-                : '-NA-'}
+              {formatTime(selectedAttendance?.CheckIn)}
             </Text>
-
           </View>
 
           <View style={styles.line}>
-
             <Text style={styles.dateText}>
               {selectedFullDate.toLocaleDateString('en-JP').replace(/\//g, '-')}
             </Text>
@@ -237,17 +232,11 @@ export default function AttendanceScreen() {
             <Text style={styles.label}>CheckOut :</Text>
 
             <Text style={styles.time}>
-              {selectedAttendance?.CheckOut
-                ? new Date(selectedAttendance.CheckOut).toLocaleTimeString('en-JP')
-                : '-NA-'}
+              {formatTime(selectedAttendance?.CheckOut)}
             </Text>
-
           </View>
-
         </View>
-
       </ScrollView>
-
     </View>
   );
 }

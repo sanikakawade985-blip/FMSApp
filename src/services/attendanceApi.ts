@@ -108,7 +108,8 @@ export const getTodayAttendanceExistsApi = async (
  */
 export const getAttendanceMonthlyApi = async (
   token: string,
-  userId: number
+  userId: number,
+  currentDate: string,
 ) => {
   const today = new Date().toISOString().split('T')[0];
 

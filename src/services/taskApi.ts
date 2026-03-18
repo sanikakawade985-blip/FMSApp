@@ -121,3 +121,27 @@ export const updateTaskStatusApi = async (
 
   return data;
 };
+
+export const getTaskStatusCountApi = async (
+  token: string, 
+  userId: number, 
+  flag: string
+) => {
+
+  const res = await fetch(
+    `${BASE_URL}/Dashboard/GetTaskDataForDashboard?OwnerId=${userId}&Flag=${flag.toLowerCase()}`,
+    { 
+      headers: { Authorization: token, Accept: 'application/json' } 
+    }
+  );
+
+  const data = await res.json();
+  
+  if (data?.Code !== '200') 
+    throw new Error(data?.Message);
+  return data.ResultData as Array<{ 
+    Name: string; 
+    Taskcount: number; 
+    TaskStatusId: number 
+  }>;
+};
