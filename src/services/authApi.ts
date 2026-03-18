@@ -64,3 +64,14 @@ export const sendOtpApi = async (mobile: string) => {
 
   return data;
 };
+
+export const verifyOtpApi = async (mobile: string, otp: string) => {
+  const res = await fetch(`${BASE_URL}/Login/VerifyOTP`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ UserName: mobile, OTP: otp }),
+  });
+  const data = await res.json();
+  if (data?.Code !== "200") throw new Error(data?.Message || "OTP invalid");
+  return data;
+};

@@ -18,6 +18,7 @@ import {
   getTodayAttendanceExistsApi,
 } from '../../services/attendanceApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Geolocation from 'react-native-geolocation-service';
 
 export default function HomeScreen() {
   const [filter, setFilter] = useState<'Today' | 'Week' | 'Month' | 'Year'>(
@@ -71,23 +72,37 @@ export default function HomeScreen() {
     }
   };
 
-  const handleCheckIn = async () => {
-    try {
-      if (!token || !userId) return;
+  // const handleCheckIn = async () => {
+  //   try {
+  //     if (!token || !userId) return;
 
-      const latitude = '18.5204';
-      const longitude = '73.8567';
+  //     const latitude = '18.5204';
+  //     const longitude = '73.8567';
 
-      await addAttendanceApi(token, Number(userId), latitude, longitude);
+  //     await addAttendanceApi(token, Number(userId), latitude, longitude);
 
-      await AsyncStorage.setItem(todayKey(), 'true');
+  //     await AsyncStorage.setItem(todayKey(), 'true');
 
-      setShowCheckInModal(false);
+  //     setShowCheckInModal(false);
 
-      Alert.alert('Checked In Successfully');
-    } catch (e: any) {
-      Alert.alert(e.message);
-    }
+  //     Alert.alert('Checked In Successfully');
+  //   } catch (e: any) {
+  //     Alert.alert(e.message);
+  //   }
+  // };
+
+  const handleCheckIn = () => {
+    Geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        await addAttendanceApi(token!, Number(userId),
+          String(latitude), String(longitude));
+        await AsyncStorage.setItem(todayKey(), "true");
+        setShowCheckInModal(false);
+      },
+      (err) => Alert.alert("Location Error", err.message),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   return (
