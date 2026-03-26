@@ -275,16 +275,51 @@ const styles = StyleSheet.create({
 
   confirmText: { fontSize: 22, color: '#fff' },
 
-  profileTitle: { fontSize: 18, fontWeight: '500', marginBottom: 10, paddingLeft: 10 }, 
-  progressBar: { height: 6, backgroundColor: '#e5e7eb', borderRadius: 3 }, 
-  progressFill: { width: '70%', height: 6, backgroundColor: '#f59e0b', borderRadius: 3, }, 
+  profileTitle: { fontSize: 18, fontWeight: '500', marginBottom: 10, paddingLeft: 10 },
+
+  progressBar: {
+    height: 6,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 3,
+  },
+
+  progressFill: {
+    width: '70%',
+    height: 6,
+    backgroundColor: '#f59e0b',
+    borderRadius: 3,
+  },
+
   dateText: { marginVertical: 12, fontSize: 18, color: '#6b7280' },
 
-  circleWrapper: { alignItems: 'center', marginVertical: 20 }, 
-  circle: { width: 200, height: 200, borderRadius: 100, borderWidth: 18, borderColor: '#2563eb', alignItems: 'center', justifyContent: 'center', }, 
-  circleValue: { fontSize: 28, fontWeight: '700' }, 
-  circleLabel: { color: '#6b7280', fontSize: 18 }, 
-  stats: { marginTop: 10 }, 
-  stat: { fontSize: 18, marginVertical: 4, fontWeight: '500', paddingVertical: 10 }, 
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, },
+  circleWrapper: { alignItems: 'center', marginVertical: 20 },
+
+  circle: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    borderWidth: 18,
+    borderColor: '#2563eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  circleValue: { fontSize: 28, fontWeight: '700' },
+  circleLabel: { color: '#6b7280', fontSize: 18 },
+
+  stats: { marginTop: 10 },
+
+  stat: {
+    fontSize: 18,
+    marginVertical: 4,
+    fontWeight: '500',
+    paddingVertical: 10,
+  },
+
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
 });
