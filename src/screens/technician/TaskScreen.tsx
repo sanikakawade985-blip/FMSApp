@@ -14,7 +14,11 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
-import { getTasksApi, getTaskTagsApi, getTaskStatusApi } from '../../services/taskApi';
+import {
+  getTasksApi,
+  getTaskTagsApi,
+  getTaskStatusApi
+} from '../../services/taskApi';
 import { Task, TaskTag } from '../../types/task.types';
 
 const { height } = Dimensions.get('window');
@@ -31,7 +35,6 @@ const getMonthYearRange = (start: Date, end: Date) => {
       year: current.getFullYear(),
       label: current.toLocaleString('en-IN', { month: 'short', year: 'numeric' }),
     });
-
     current.setMonth(current.getMonth() + 1);
   }
 
@@ -40,18 +43,12 @@ const getMonthYearRange = (start: Date, end: Date) => {
 
 const getStatusStyle = (statusId: number) => {
   switch (statusId) {
-    case 3:
-      return styles.ribbonOngoing;
-    case 1:
-      return styles.ribbonCompleted;
-    case 4:
-      return styles.ribbonInactive;
-    case 5:
-      return styles.ribbonOnHold;
-    case 2:
-      return styles.ribbonRejected;
-    default:
-      return styles.ribbonInactive;
+    case 3: return styles.ribbonOngoing;
+    case 1: return styles.ribbonCompleted;
+    case 4: return styles.ribbonInactive;
+    case 5: return styles.ribbonOnHold;
+    case 2: return styles.ribbonRejected;
+    default: return styles.ribbonInactive;
   }
 };
 
@@ -85,18 +82,43 @@ export default function TaskScreen({ navigation }: any) {
   const formatMonthYear = (date: Date) =>
     date.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
 
+  /**
+   * =========================
+   * FETCH TAGS
+   * =========================
+   */
   const fetchTags = async () => {
     if (!token || !uid) return;
-    const tags = await getTaskTagsApi(token, Number(uid));
-    setTagList(tags);
+
+    try {
+      const tags = await getTaskTagsApi(token, Number(uid));
+      setTagList(tags);
+    } catch (e) {
+      console.log('Tag fetch error', e);
+    }
   };
 
+  /**
+   * =========================
+   * FETCH STATUS
+   * =========================
+   */
   const fetchStatuses = async () => {
     if (!token) return;
-    const data = await getTaskStatusApi(token);
-    setStatusList(data || []);
+
+    try {
+      const data = await getTaskStatusApi(token);
+      setStatusList(data || []);
+    } catch (e) {
+      console.log('Status fetch error', e);
+    }
   };
 
+  /**
+   * =========================
+   * FETCH TASKS (UPDATED)
+   * =========================
+   */
   const fetchTasks = async (page = 1, reset = false) => {
     if (!token || !uid) return;
 
@@ -110,18 +132,21 @@ export default function TaskScreen({ navigation }: any) {
         Number(uid),
         search,
         selectedStatus?.Id || 0,
+        1, // taskTypeId (fixed from backend)
         page,
         selectedDate.getMonth() + 1,
         selectedDate.getFullYear(),
-        selectedTag?.TaskTagId || 0
+        0 // CustomerDetailsId (mandatory as per API)
       );
 
       const newTasks = response?.ResultData || [];
+
       setRecordCount(response?.RecordCount || 0);
 
       setTasks(prev =>
         page === 1 ? newTasks : [...prev, ...newTasks]
       );
+
     } catch (err) {
       console.log('Task fetch error', err);
     } finally {
@@ -139,11 +164,6 @@ export default function TaskScreen({ navigation }: any) {
     setPageIndex(1);
     fetchTasks(1, true);
   }, [selectedStatus, selectedTag, search, selectedDate]);
-
-  useEffect(() => {
-    console.log("STATUS LIST", statusList)
-    console.log("TAG LIST", tagList)
-  }, [statusList, tagList]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -169,15 +189,12 @@ export default function TaskScreen({ navigation }: any) {
       case 1:
         navigation.navigate('TaskTracking', { task });
         break;
-
       case 2:
         navigation.navigate('PaymentReceived', { task });
         break;
-
       case 3:
         navigation.navigate('TaskClosure', { task });
         break;
-
       case 4:
         Alert.alert('Task already completed');
         break;
@@ -187,12 +204,16 @@ export default function TaskScreen({ navigation }: any) {
   const renderItem = ({ item }: { item: Task }) => (
     <Pressable style={styles.card} onPress={() => openTask(item)}>
       <View style={[styles.leftRibbon, getStatusStyle(item?.TaskStatusId ?? 4)]}>
-        <Text style={styles.ribbonText}>{item?.TaskStatus ? item.TaskStatus.toUpperCase() : ''}</Text>
+        <Text style={styles.ribbonText}>
+          {item?.TaskStatus ? item.TaskStatus.toUpperCase() : ''}
+        </Text>
       </View>
 
       {item.Task_TagName && (
         <View style={styles.rightRibbon}>
-          <Text style={styles.ribbonText}>{item.Task_TagName.toUpperCase()}</Text>
+          <Text style={styles.ribbonText}>
+            {item.Task_TagName.toUpperCase()}
+          </Text>
         </View>
       )}
 
@@ -202,11 +223,16 @@ export default function TaskScreen({ navigation }: any) {
           : ''}
       </Text>
 
-      <Text style={styles.address}>{item.FullAddress || item.CustomerName}</Text>
+      <Text style={styles.address}>
+        {item.FullAddress || item.CustomerName}
+      </Text>
+
       <Text style={styles.address}>{item.CustomerName}</Text>
 
       {item.FirstNameLastName && (
-        <Text style={styles.customer}>{item.FirstNameLastName}</Text>
+        <Text style={styles.customer}>
+          {item.FirstNameLastName}
+        </Text>
       )}
     </Pressable>
   );
