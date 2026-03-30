@@ -17,7 +17,7 @@ import {
   addAttendanceApi,
   getTodayAttendanceExistsApi,
 } from '../../services/attendanceApi';
-import { getTaskStatusCountApi } from '../../services/taskApi';
+// import { getTaskStatusCountApi } from '../../services/taskApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
 
