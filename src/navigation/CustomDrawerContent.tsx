@@ -5,7 +5,13 @@ import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { COLORS } from '../theme/colors';
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { checkoutAttendanceApi } from '../services/attendanceApi';
+import { attendanceApi } from '../services/attendanceApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const todayKey = () => {
+  const today = new Date().toISOString().split('T')[0];
+  return `checked_in_${today}`;
+};
 
 export default function CustomDrawerContent({ navigation }: DrawerContentComponentProps) {
 
@@ -15,28 +21,36 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
     clearAuth, name, phone, countryCode, token, uid: userId
   } = useAuthStore();
   
-  const handleCheckout = async () => {
+  const handleCheckOut = async () => {
     try {
       if (!token || !userId) return;
 
-      const latitude = '18.5204';
-      const longitude = '73.8567'; 
+      const query = `?UserId=${userId}`;
 
-      const res = await checkoutAttendanceApi(
+      const response = await attendanceApi.checkOut(
+        query,
         token,
-        Number(userId),
-        latitude,
-        longitude
+        '',
+        Number(userId)
       );
 
-      console.log('CHECKOUT RESPONSE:', res);
+      const parsed =
+        typeof response.resultData === 'string'
+          ? JSON.parse(response.resultData)
+          : response.resultData;
 
-      setShowCheckOutModal(false);
+      if (parsed?.Code === "200") {
+        await AsyncStorage.removeItem(todayKey());
 
-      Alert.alert('Success', 'Checked Out Successfully');
+        setShowCheckOutModal(false);
+
+        Alert.alert("Checked Out Successfully");
+      } else {
+        Alert.alert(parsed?.Message || "Checkout failed");
+      }
 
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      Alert.alert(e.message);
     }
   };
 
@@ -154,7 +168,7 @@ export default function CustomDrawerContent({ navigation }: DrawerContentCompone
 
             <Pressable
               style={styles.confirmBtn}
-              onPress={handleCheckout}
+              onPress={handleCheckOut}
             >
               <Text style={styles.confirmText}>CHECK-OUT</Text>
             </Pressable>

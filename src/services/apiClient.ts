@@ -1,30 +1,67 @@
 const BASE_URL = "http://98.70.36.167:801/API/api";
 
-export const buildHeaders = (token?: string, userId?: number) => ({
-  "Content-Type": "application/json",
-  Accept: "application/json",
-  ...(token && { Authorization: `Bearer ${token}` }),
-  ...(userId && { UserID: String(userId) }),
-  AndroidID: "ANDROID",
-});
+/**
+ * Build headers (matches RequestBuilder.java)
+ */
+export const buildHeaders = (
+  token?: string,
+  userId?: number,
+  androidId?: string
+) => {
+  const headers: any = {
+    "Content-Type": "application/json",
+  };
 
+  if (androidId) headers["AndroidID"] = androidId;
+  if (userId) headers["UserID"] = String(userId);
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  return headers;
+};
+
+/**
+ * Handle response (matches URLConnectionResponse.java)
+ */
 export const handleResponse = async (response: Response) => {
-  const data = await response.json();
+  const statusCode = response.status;
+  const message = response.statusText;
 
-  if (!response.ok) {
-    throw new Error(data?.Message || "Network error");
+  let json = null;
+
+  try {
+    json = await response.json();
+  } catch {
+    return {
+      statusCode,
+      message,
+      resultData: null,
+    };
   }
 
-  // 🔥 Backend-specific handling (from Android code)
-  if (data?.Code === "401") {
-    throw new Error("Unauthorized");
+  /**
+   * 🔴 Android-specific error codes
+   */
+  if (
+    json?.Code === "999" ||
+    json?.Code === "401" ||
+    json?.Code === "888"
+  ) {
+    return {
+      statusCode: Number(json.Code),
+      message: json.Message,
+      resultData: null,
+    };
   }
 
-  if (data?.Code && data.Code !== "200") {
-    throw new Error(data?.Message || "API error");
-  }
-
-  return data?.Data ?? data;
+  /**
+   * ✅ Success case (DO NOT extract ResultData here)
+   * Android returns full object
+   */
+  return {
+    statusCode,
+    message,
+    resultData: json,
+  };
 };
 
 export { BASE_URL };

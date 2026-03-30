@@ -14,11 +14,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
-import {
-  getTasksApi,
-  getTaskTagsApi,
-  getTaskStatusApi
-} from '../../services/taskApi';
+import { taskApi } from '../../services/taskApi';
 import { Task, TaskTag } from '../../types/task.types';
 
 const { height } = Dimensions.get('window');
@@ -90,33 +86,23 @@ export default function TaskScreen({ navigation }: any) {
   const fetchTags = async () => {
     if (!token || !uid) return;
 
-    try {
-      const tags = await getTaskTagsApi(token, Number(uid));
-      setTagList(tags);
-    } catch (e) {
-      console.log('Tag fetch error', e);
-    }
+    const response = await taskApi.getTaskTags(
+      token,
+      '',
+      Number(uid)
+    );
+
+    const parsed =
+      typeof response.resultData === 'string'
+        ? JSON.parse(response.resultData)
+        : response.resultData;
+
+    setTagList(parsed?.ResultData || []);
   };
 
   /**
    * =========================
-   * FETCH STATUS
-   * =========================
-   */
-  const fetchStatuses = async () => {
-    if (!token) return;
-
-    try {
-      const data = await getTaskStatusApi(token);
-      setStatusList(data || []);
-    } catch (e) {
-      console.log('Status fetch error', e);
-    }
-  };
-
-  /**
-   * =========================
-   * FETCH TASKS (UPDATED)
+   * FETCH TASKS
    * =========================
    */
   const fetchTasks = async (page = 1, reset = false) => {
@@ -127,21 +113,35 @@ export default function TaskScreen({ navigation }: any) {
     try {
       setLoading(true);
 
-      const response = await getTasksApi(
+      const query = `?UserId=${uid}` +
+        `&searchparam=${search || ''}` +
+        `&TaskStatusID=${selectedStatus?.Id || 0}` +
+        `&TaskTypeID=1` +
+        `&pageIndex=${page}` +
+        `&TaskMonth=${selectedDate.getMonth() + 1}` +
+        `&TaskYear=${selectedDate.getFullYear()}` +
+        `&CustomerDetailsId=0`;
+
+      const response = await taskApi.getCRMTaskList(
+        query,
         token,
-        Number(uid),
-        search,
-        selectedStatus?.Id || 0,
-        1, // taskTypeId (fixed from backend)
-        page,
-        selectedDate.getMonth() + 1,
-        selectedDate.getFullYear(),
-        0 // CustomerDetailsId (mandatory as per API)
+        '', // AndroidID (pass actual if available)
+        Number(uid)
       );
 
-      const newTasks = response?.ResultData || [];
+      // IMPORTANT: Android returns full JSON string inside resultData
+      const parsed =
+        typeof response.resultData === 'string'
+          ? JSON.parse(response.resultData)
+          : response.resultData;
 
-      setRecordCount(response?.RecordCount || 0);
+      const newTasks = parsed?.ResultData || [];
+
+      setRecordCount(parsed?.RecordCount || 0);
+
+      setTasks(prev =>
+        page === 1 ? newTasks : [...prev, ...newTasks]
+      );
 
       setTasks(prev =>
         page === 1 ? newTasks : [...prev, ...newTasks]
@@ -157,7 +157,6 @@ export default function TaskScreen({ navigation }: any) {
 
   useEffect(() => {
     fetchTags();
-    fetchStatuses();
   }, []);
 
   useEffect(() => {

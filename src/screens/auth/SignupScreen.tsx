@@ -1,3 +1,4 @@
+//SignupScreen.tsx
 import {
   View,
   TextInput,
@@ -17,13 +18,20 @@ import { COUNTRIES, Country } from '../../data/countries';
 import { getDefaultCountry } from '../../utils/countryUtils';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GlobalStyles } from '../../styles/globalStyles';
-import { signupMobileApi } from '../../services/authApi';
+import { authApi } from '../../services/authApi';
 import { COLORS } from '../../theme/colors';
 
 type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
-  Otp: { mobile: string; countryCode: string };
+  Otp: { 
+    mobile: string; 
+    countryCode: string; 
+    serverOtp: number; 
+    token: string; 
+    userId: number; 
+    role: string 
+  };
 };
 
 export default function SignupScreen() {
@@ -53,11 +61,31 @@ export default function SignupScreen() {
     try {
       const fullMobile = `${selectedCountry.dialCode}${mobile}`;
 
-      await signupMobileApi(fullMobile);
+      const response = await authApi.sendOtp({
+        MobileNo: fullMobile
+      });
+
+      const parsed =
+        typeof response.resultData === 'string'
+          ? JSON.parse(response.resultData)
+          : response.resultData;
+
+      const result = parsed?.ResultData;
+
+      const otpFromApi = result?.OTP;
+
+      if (!otpFromApi) {
+        Alert.alert("Error", "Failed to get OTP. Please try again.");
+        return;
+      }
 
       navigation.navigate('Otp', {
         mobile: fullMobile,
         countryCode: selectedCountry.dialCode,
+        serverOtp: result?.OTP ?? 0,
+        token: result?.Token ?? "",
+        userId: result?.UserID ?? 0,
+        role: result?.UserGroupName ?? "technician",
       });
 
     } catch (err: any) {
