@@ -1,349 +1,235 @@
 import { BASE_URL, buildHeaders, handleResponse } from "../services/apiClient";
 
-/**
- * =========================
- * TASK LIST (MAIN API)
- * =========================
- */
-export const getTasksApi = async (
-  token: string,
-  userId: number,
-  params: {
-    searchparam?: string;
-    TaskStatusID?: number;
-    TaskTypeID?: number;
-    pageIndex?: number;
-    TaskMonth: number;
-    TaskYear: number;
-    CustomerDetailsId?: number;
+// Common request function (same as Android logic)
+async function request(
+  url: string,
+  method: string,
+  data?: any,
+  token?: string,
+  androidId?: string,
+  userId?: number
+) {
+  const headers: any = {
+    "Content-Type": "application/json",
+  };
+
+  if (androidId) headers["AndroidID"] = androidId;
+  if (userId) headers["UserID"] = String(userId);
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const options: RequestInit = {
+    method,
+    headers,
+  };
+
+  if (data) {
+    options.body = JSON.stringify(data);
   }
-) => {
-  const query =
-    `?UserId=${userId}` +
-    `&searchparam=${params.searchparam || ""}` +
-    `&TaskStatusID=${params.TaskStatusID || 0}` +
-    `&TaskTypeID=${params.TaskTypeID || 1}` +
-    `&pageIndex=${params.pageIndex || 1}` +
-    `&TaskMonth=${params.TaskMonth}` +
-    `&TaskYear=${params.TaskYear}` +
-    `&CustomerDetailsId=${params.CustomerDetailsId || 0}`;
 
-  const response = await fetch(
-    `${BASE_URL}/Task/CRMGetTaskListSearchByParam${query}`,
-    {
-      method: "GET",
-      headers: buildHeaders(token, userId),
-    }
-  );
+  const res = await fetch(url, options);
 
-  return handleResponse(response);
-};
+  const statusCode = res.status;
+  const message = res.statusText;
 
-/**
- * =========================
- * TASK TAGS
- * =========================
- */
-export const getTaskTagsApi = async (
-  token: string,
-  userId: number
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/GetTaskTagList?UserId=${userId}`,
-    {
-      method: "GET",
-      headers: buildHeaders(token, userId),
-    }
-  );
-
-  return handleResponse(response);
-};
-
-/**
- * =========================
- * TASK STATUS LIST
- * =========================
- */
-export const getTaskStatusApi = async (
-  token: string,
-  userId: number
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/GetTaskStatusList`,
-    {
-      method: "GET",
-      headers: buildHeaders(token, userId),
-    }
-  );
-
-  return handleResponse(response);
-};
-
-/**
- * =========================
- * UPDATE TASK STATUS
- * =========================
- */
-export const updateTaskStatusApi = async (
-  token: string,
-  userId: number,
-  payload: {
-    TaskId: number;
-    StatusId: number;
-    Remarks?: string;
+  let json = null;
+  try {
+    json = await res.json();
+  } catch {
+    return { statusCode, message, resultData: null };
   }
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/UpdateTaskStatus`,
-    {
-      method: "POST",
-      headers: buildHeaders(token, userId),
-      body: JSON.stringify(payload),
-    }
-  );
 
-  return handleResponse(response);
-};
-
-/**
- * =========================
- * UPDATE TASK DETAILS
- * =========================
- */
-export const updateTaskApi = async (
-  token: string,
-  userId: number,
-  payload: any
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/UpdateTaskDetailsByTaskID`,
-    {
-      method: "POST",
-      headers: buildHeaders(token, userId),
-      body: JSON.stringify(payload),
-    }
-  );
-
-  return handleResponse(response);
-};
-
-/**
- * =========================
- * ADD TASK
- * =========================
- */
-export const addTaskApi = async (
-  token: string,
-  userId: number,
-  payload: any
-) => {
-  const response = await fetch(
-    `${BASE_URL}/TaskList/AddTaskDetails`,
-    {
-      method: "POST",
-      headers: buildHeaders(token, userId),
-      body: JSON.stringify(payload),
-    }
-  );
-
-  return handleResponse(response);
-};
-
-/**
- * =========================
- * GET TASK BY ID
- * =========================
- */
-export const getTaskByIdApi = async (
-  token: string,
-  userId: number,
-  taskId: number
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/TaskListByTaskId?TaskId=${taskId}`,
-    {
-      method: "GET",
-      headers: buildHeaders(token, userId),
-    }
-  );
-
-  return handleResponse(response);
-};
-
-/**
- * =========================
- * ACTIVATE / DEACTIVATE TASK
- * =========================
- */
-export const deactivateTaskApi = async (
-  token: string,
-  userId: number,
-  taskId: number
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/DeActivatTaskByTaskID?Id=${taskId}`,
-    {
-      method: "DELETE",
-      headers: buildHeaders(token, userId),
-    }
-  );
-
-  return handleResponse(response);
-};
-
-export const activateTaskApi = async (
-  token: string,
-  userId: number,
-  taskId: number
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/ActivatTaskByTaskID?Id=${taskId}`,
-    {
-      method: "DELETE",
-      headers: buildHeaders(token, userId),
-    }
-  );
-
-  return handleResponse(response);
-};
-
-/**
- * =========================
- * REASSIGN TASK
- * =========================
- */
-export const reassignTaskApi = async (
-  token: string,
-  userId: number,
-  payload: {
-    TaskId: number;
-    AssignTo: number;
+  // Match Android response handling
+  if (json?.Code === "999" || json?.Code === "401" || json?.Code === "888") {
+    return {
+      statusCode: Number(json.Code),
+      message: json.Message,
+      resultData: null,
+    };
   }
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/ReassignTask`,
-    {
-      method: "POST",
-      headers: buildHeaders(token, userId),
-      body: JSON.stringify(payload),
-    }
-  );
 
-  return handleResponse(response);
-};
+  return {
+    statusCode,
+    message,
+    resultData: json,
+  };
+}
 
 /**
- * =========================
- * VALIDATE TASK
- * =========================
+ * Task APIs
  */
-export const validateTaskApi = async (
-  token: string,
-  userId: number,
-  params: {
-    Userid: number;
-    TaskId: number;
-    NewTaskId: string;
-  }
-) => {
-  const query =
-    `?Userid=${params.Userid}` +
-    `&TaskId=${params.TaskId}` +
-    `&NewTaskId=${params.NewTaskId}`;
+export const taskApi = {
+  // 1. Get All Tasks (NEW)
+  getAllTasks: (
+    query: string,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/TaskList/AllTasksListByUserId${query}`,
+      "GET",
+      undefined,
+      token,
+      androidId,
+      userId
+    ),
 
-  const response = await fetch(
-    `${BASE_URL}/Task/ValidateTaskDetails${query}`,
-    {
-      method: "GET",
-      headers: buildHeaders(token, userId),
-    }
-  );
+  // 2. Validate Task
+  validateTask: (
+    data: any,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/Task/ValidateTaskDetails`,
+      "POST",
+      data,
+      token,
+      androidId,
+      userId
+    ),
 
-  return handleResponse(response);
-};
+  // 3. Add Pre Device Info (Before Task)
+  addPreDeviceInfo: (
+    data: any,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/Task/AddPreDeviceInfoDetails`,
+      "POST",
+      data,
+      token,
+      androidId,
+      userId
+    ),
 
-/**
- * =========================
- * LIVE LOCATION
- * =========================
- */
-export const addLiveLocationApi = async (
-  token: string,
-  userId: number,
-  payload: {
-    UserId: number;
-    Latitude: number;
-    Longitude: number;
-  }
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/AddLiveLocation`,
-    {
-      method: "POST",
-      headers: buildHeaders(token, userId),
-      body: JSON.stringify(payload),
-    }
-  );
+  // 4. CRM Task List (Search)
+  getCRMTaskList: (
+    query: string,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/Task/CRMGetTaskListSearchByParam${query}`,
+      "GET",
+      undefined,
+      token,
+      androidId,
+      userId
+    ),
 
-  return handleResponse(response);
-};
+  // 5. On Hold Task
+  onHoldTask: (
+    data: any,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/Task/OnHoldTaskDetails`,
+      "POST",
+      data,
+      token,
+      androidId,
+      userId
+    ),
 
-export const getLiveLocationApi = async (
-  token: string,
-  userId: number,
-  targetUserId: number
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/GetLiveLocation?UserId=${targetUserId}`,
-    {
-      method: "GET",
-      headers: buildHeaders(token, userId),
-    }
-  );
+  // 6. Get Task Tag List
+  getTaskTags: (
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/Task/GetTaskTagList`,
+      "GET",
+      undefined,
+      token,
+      androidId,
+      userId
+    ),
 
-  return handleResponse(response);
-};
+  // 7. Update Reissued Items
+  updateReissuedItems: (
+    data: any,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/Task/UpdateReIssuedItems`,
+      "POST",
+      data,
+      token,
+      androidId,
+      userId
+    ),
 
-/**
- * =========================
- * TASK CLOSURE
- * =========================
- */
-export const addTaskClosureApi = async (
-  token: string,
-  userId: number,
-  payload: any
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/AddTaskClosureDetails`,
-    {
-      method: "POST",
-      headers: buildHeaders(token, userId),
-      body: JSON.stringify(payload),
-    }
-  );
+  // 8. Upload Post Task Docs
+  uploadPostTaskDocs: (
+    data: any,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/TaskList/UploadPostTaskDocs`,
+      "POST",
+      data,
+      token,
+      androidId,
+      userId
+    ),
 
-  return handleResponse(response);
-};
+  // 9. Get Post Task Docs
+  getPostTaskDocs: (
+    query: string,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/TaskList/GetPostTaskDocs${query}`,
+      "GET",
+      undefined,
+      token,
+      androidId,
+      userId
+    ),
 
-/**
- * =========================
- * ON HOLD TASK
- * =========================
- */
-export const onHoldTaskApi = async (
-  token: string,
-  userId: number,
-  payload: any
-) => {
-  const response = await fetch(
-    `${BASE_URL}/Task/OnHoldTaskDetails`,
-    {
-      method: "POST",
-      headers: buildHeaders(token, userId),
-      body: JSON.stringify(payload),
-    }
-  );
+  // 10. Get Task Images (TaskId wise)
+  getTaskImages: (
+    query: string,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/Task/GetAllTaskListTaskIdWise${query}`,
+      "GET",
+      undefined,
+      token,
+      androidId,
+      userId
+    ),
 
-  return handleResponse(response);
+  // 11. Get Before/After/OnHold Images
+  getBeforeAfterOnHoldImages: (
+    query: string,
+    token: string,
+    androidId: string,
+    userId: number
+  ) =>
+    request(
+      `${BASE_URL}/TaskList/GetBeforeAfterAndHoldTaskFiles${query}`,
+      "GET",
+      undefined,
+      token,
+      androidId,
+      userId
+    ),
 };

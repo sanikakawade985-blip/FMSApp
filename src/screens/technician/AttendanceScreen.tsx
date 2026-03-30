@@ -11,7 +11,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { TechnicianTabParamList } from '../../navigation/TechnicianTabs';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
-import { getAttendanceMonthlyApi } from '../../services/attendanceApi';
+import { attendanceApi } from '../../services/attendanceApi';
 import { useAuthStore } from '../../store/authStore';
 
 type NavigationProp = BottomTabNavigationProp<
@@ -41,14 +41,27 @@ export default function AttendanceScreen() {
       if (!token || !userId) return;
 
       const today = new Date();
-      const currentDate = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
 
-      const res = await getAttendanceMonthlyApi(
-        token, Number(userId), currentDate
+      const query =
+        `?UserId=${userId}` +
+        `&Month=${today.getMonth() + 1}` +
+        `&Year=${today.getFullYear()}`;
+
+      const response = await attendanceApi.getTechMonthly(
+        query,
+        token,
+        '', // AndroidID (pass actual if available)
+        Number(userId)
       );
 
-      if (Array.isArray(res?.ResultData)) {
-        setAttendanceData(res.ResultData);
+      // Parse result (IMPORTANT - matches Android)
+      const parsed =
+        typeof response.resultData === 'string'
+          ? JSON.parse(response.resultData)
+          : response.resultData;
+
+      if (Array.isArray(parsed?.ResultData)) {
+        setAttendanceData(parsed.ResultData);
       } else {
         setAttendanceData([]);
       }

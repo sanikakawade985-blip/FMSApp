@@ -13,11 +13,8 @@ import { useState, useEffect } from 'react';
 import { useDoubleBackExit } from '../../../hooks/useDoubleBackExit';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/authStore';
-import {
-  addAttendanceApi,
-  getTodayAttendanceExistsApi,
-} from '../../services/attendanceApi';
-import { getTaskStatusCountApi } from '../../services/taskApi';
+import { attendanceApi } from '../../services/attendanceApi';
+import { taskApi } from '../../services/taskApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
 
@@ -60,9 +57,21 @@ export default function HomeScreen() {
         return; // already checked in today locally
       }
 
-      const res = await getTodayAttendanceExistsApi(token, Number(userId));
+      const query = `?UserId=${userId}`;
 
-      if (!res?.ResultData) {
+      const response = await attendanceApi.checkAttendance(
+        query,
+        token,
+        '',
+        Number(userId)
+      );
+
+      const parsed =
+        typeof response.resultData === 'string'
+          ? JSON.parse(response.resultData)
+          : response.resultData;
+
+      if (!parsed?.ResultData) {
         setShowCheckInModal(true);
       } else {
         await AsyncStorage.setItem(todayKey(), 'true');
@@ -73,31 +82,37 @@ export default function HomeScreen() {
     }
   };
 
-  // const handleCheckIn = async () => {
-  //   try {
-  //     if (!token || !userId) return;
+  const loadTaskCounts = async () => {
+    if (!token || !userId) return;
 
-  //     const latitude = '18.5204';
-  //     const longitude = '73.8567';
+    const query = `?UserId=${userId}&searchparam=&TaskStatusID=0&TaskTypeID=1&pageIndex=1&TaskMonth=${new Date().getMonth()+1}&TaskYear=${new Date().getFullYear()}&CustomerDetailsId=0`;
 
-  //     await addAttendanceApi(token, Number(userId), latitude, longitude);
+    const response = await taskApi.getCRMTaskList(query, token, '', Number(userId));
 
-  //     await AsyncStorage.setItem(todayKey(), 'true');
+    const parsed =
+      typeof response.resultData === 'string'
+        ? JSON.parse(response.resultData)
+        : response.resultData;
 
-  //     setShowCheckInModal(false);
+    const list = parsed?.ResultData || [];
 
-  //     Alert.alert('Checked In Successfully');
-  //   } catch (e: any) {
-  //     Alert.alert(e.message);
-  //   }
-  // };
+    // derive counts from list
+  };
 
   const handleCheckIn = () => {
     Geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
-        await addAttendanceApi(token!, Number(userId),
-          String(latitude), String(longitude));
+        await attendanceApi.addAttendance(
+        {
+          UserId: Number(userId),
+          Latitude: String(latitude),
+          Longitude: String(longitude),
+        },
+        token!,
+        '',
+        Number(userId)
+      );
         await AsyncStorage.setItem(todayKey(), "true");
         setShowCheckInModal(false);
       },

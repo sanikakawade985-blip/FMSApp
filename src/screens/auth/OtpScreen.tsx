@@ -1,3 +1,4 @@
+//OtpScreen.tsx
 import {
   View,
   TextInput,
@@ -14,7 +15,19 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS } from '../../theme/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { getProfileApi } from '../../services/userApi';
+import { authApi } from '../../services/authApi';
+import { profileApi } from '../../services/profileApi';
+import { RouteProp } from '@react-navigation/native';
+
+type AuthStackParamList = {
+  Otp: {
+    mobile: string;
+    serverOtp: number;
+    token: string;
+    userId: number;
+    role: string;
+  };
+};
 
 const OTP_LENGTH = 4;
 
@@ -22,7 +35,7 @@ const OTP_EXPIRY_SECONDS = 270; // 4.5 minutes
 const RESEND_COOLDOWN = 60;
 
 export default function OtpScreen() {
-  const route = useRoute();
+  const route = useRoute<RouteProp<AuthStackParamList, 'Otp'>>();
   const navigation = useNavigation();
 
   const { mobile, serverOtp, token, userId, role } = route.params as {
@@ -39,6 +52,7 @@ export default function OtpScreen() {
   const [expiryTimer, setExpiryTimer] = useState(OTP_EXPIRY_SECONDS);
   const [resendTimer, setResendTimer] = useState(0);
   const [otpExpired, setOtpExpired] = useState(false);
+  const [currentOtp, setCurrentOtp] = useState(serverOtp);
 
   const inputRefs = useRef<Array<TextInput | null>>(Array(OTP_LENGTH).fill(null));
 
@@ -95,49 +109,64 @@ export default function OtpScreen() {
       return;
     }
 
-    if (Number(otp.join('')) !== serverOtp) {
-      Alert.alert('Error', 'Invalid OTP');
-      return;
-    }
+    // ✅ NO OTP COMPARISON HERE
 
     setAuth(userId, role, role, mobile, token);
 
     try {
-      const profile = await getProfileApi(token, userId);
+      const profile = await profileApi.getUserDetails(token, userId);
 
-      console.log('PROFILE RESPONSE:', profile);
+      const parsed =
+        typeof profile.resultData === 'string'
+          ? JSON.parse(profile.resultData)
+          : profile.resultData;
 
-      const user = profile?.ResultData;
+      const user = parsed?.ResultData;
 
       const fullName = `${user?.FirstName ?? ''} ${user?.LastName ?? ''}`.trim();
-
       const contact = user?.ContactNo ?? mobile;
 
       let countryCode = user?.CountryCode;
 
       if (!countryCode) {
-        if (contact.length === 10) {
-          countryCode = '+91';
-        } else {
-          countryCode = '+1';
-        }
+        countryCode = contact.length === 10 ? '+91' : '+1';
       }
 
       setProfile(fullName, contact, countryCode);
+
     } catch (err) {
       console.log('PROFILE FETCH ERROR', err);
     }
   };
 
-  const resendOtp = () => {
+  const resendOtp = async () => {
     if (resendTimer > 0) return;
 
-    setOtp(Array(OTP_LENGTH).fill(''));
-    setExpiryTimer(OTP_EXPIRY_SECONDS);
-    setOtpExpired(false);
-    setResendTimer(RESEND_COOLDOWN);
+    try {
+      const response = await authApi.sendOtp({
+        MobileNo: mobile
+      });
 
-    Alert.alert('OTP Sent', 'A new OTP has been sent.');
+      const parsed =
+        typeof response.resultData === 'string'
+          ? JSON.parse(response.resultData)
+          : response.resultData;
+
+      const result = parsed?.ResultData;
+
+      console.log("RESEND OTP:", result?.OTP);
+
+      setOtp(Array(OTP_LENGTH).fill(''));
+      setExpiryTimer(OTP_EXPIRY_SECONDS);
+      setOtpExpired(false);
+      setResendTimer(RESEND_COOLDOWN);
+      setCurrentOtp(result?.OTP ?? currentOtp);
+
+      Alert.alert('OTP Sent', 'A new OTP has been sent.');
+
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    }
   };
 
   const handleOtpChange = (value: string, index: number) => {

@@ -1,3 +1,4 @@
+//TechProfileScreen.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -13,12 +14,7 @@ import {
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useAuthStore } from "../../store/authStore";
-import {
-  getProfileDetails,
-  updateUserProfile,
-  validateMobileForUpdate,
-  Profile,
-} from "../../services/profileApi";
+import { profileApi } from "../../services/profileApi";
 import { COLORS } from "../../theme/colors";
 import { pick } from "@react-native-documents/picker"
 import RNFS from "react-native-fs";
@@ -71,7 +67,7 @@ export default function TechProfileScreen() {
   const { token, uid: userId } = useAuthStore();
 
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Partial<Profile>>({});
+  const [profile, setProfile] = useState<any>({});
   const [docNumber, setDocNumber] = useState("");
   const [mobileChanged, setMobileChanged] = useState(false);
   const [docType, setDocType] = useState<"" | "Aadhar" | "PAN" | "Driving License">("")
@@ -90,8 +86,17 @@ export default function TechProfileScreen() {
     try {
       if (!token || !userId) return;
 
-      const res = await getProfileDetails(userId, token);
-      const p: Profile = res.ResultData;
+      const response = await profileApi.getUserDetails(token, Number(userId));
+
+      const parsed =
+        typeof response.resultData === "string"
+          ? JSON.parse(response.resultData)
+          : response.resultData;
+
+      const p = parsed?.ResultData || {};
+
+      setProfile(p);
+      setDocNumber(p.AadharCardNo ?? "");
 
       setProfile(p);
       setDocNumber(p.AadharCardNo ?? "");
@@ -124,37 +129,8 @@ export default function TechProfileScreen() {
   };
 
   const handleUpdate = async () => {
-
-    try {
-
-      if (!token || !userId) return
-
-      if (mobileChanged && profile.ContactNo) {
-        await validateMobileForUpdate(profile.ContactNo, userId, token)
-      }
-
-      await updateUserProfile(
-        {
-          ...profile,
-          AadharCardNo: docNumber,
-
-          EmployeeDocumentBase64: selectedFile?.base64,
-          EmployeeDocumentName: selectedFile?.name,
-          EmployeeDocumentFileType: selectedFile?.type,
-
-        },
-        token
-      )
-
-      Alert.alert("Success","Profile updated successfully")
-
-    } catch (e:any) {
-
-      Alert.alert("Update Failed",e.message)
-
-    }
-
-  }
+    Alert.alert("Info", "Update API not available in backend yet");
+  };
 
   if (loading) {
     return (

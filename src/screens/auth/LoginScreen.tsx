@@ -1,3 +1,4 @@
+//LoginScreen.tsx
 import {
   View,
   TextInput,
@@ -15,7 +16,7 @@ import AppButton from '../../components/AppButton';
 import { COLORS } from '../../theme/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GlobalStyles } from '../../styles/globalStyles';
-import { sendOtpApi, checkMobileExistsApi } from '../../services/authApi';
+import { authApi } from '../../services/authApi';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import * as Geolocation from 'react-native-geolocation-service';
 
@@ -52,13 +53,23 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      //Step 1 - check mobile exists
-      await checkMobileExistsApi(cleanedMobile);
+      const response = await authApi.login({
+        MobileNo: cleanedMobile
+      });
 
-      // Step 2 — Send login request
-      const res = await sendOtpApi(cleanedMobile);
+      const parsed =
+        typeof response.resultData === 'string'
+          ? JSON.parse(response.resultData)
+          : response.resultData;
 
-      const result = res?.ResultData;
+      const result = parsed?.ResultData;
+
+      const otpFromApi = result?.OTP;
+
+      if (!otpFromApi) {
+        Alert.alert("Error", "Failed to get OTP. Please try again.");
+        return;
+      }
 
       navigation.navigate("Otp", {
         mobile: cleanedMobile,
